@@ -7,15 +7,15 @@ The repo demonstrates how to create a solution which leverages Gen AI technologi
 1. Search the pre-indexed documents using vector DB and respond in natural language using S/LLM models.
 2. Search the databases (e.g. Influx, SQL) using predefined queries Vector DB or synthesized by S/LLM model, and respond in natural language using S/LLM models.
 
-## Persona Alignment (Data)
+## Persona Alignment (Database Search)
 
-On data search side of things, this solution addresses the challenge faced by non IT users who'd benefit from data exploration apart from well thought-out and predefined queries written by IT upfront.
+On database search side of things, this solution addresses the challenge faced by non IT users who'd benefit from data exploration apart from well thought-out and predefined queries written by IT upfront.
 
 Users want to search data from data stores in both well defined queries way or exploration way. This sits in-between od data analyst who are aware of the query syntaxes and business users who are limited by the IT provided user queries.
 
 ## Design Overview and Use Cases
 
-There three primary use cases handled by this solution, they are described below along with their respective flows.
+There two primary use cases handled by this solution, they are described below along with their respective flows.
 
 ### Document Search
 
