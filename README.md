@@ -27,9 +27,17 @@ User would like to search existing documents, these documents can be machine man
 
 ![Database Search Process](docs/images/rag-db-process.png?raw=true "Database Search Process")
 
+## Deployment
+
+This section describes the steps which you can use to deploy this solution in your environment to try out.
+
+### Codespace Deployment
+
+[Add steps to deploy the solution in Codespace]
+
 ## Configuration and Extensibility
 
-This repo provides a few configuration options which makes it easier for users to customize the solution for their needs.
+This repo makes use of [Ollama] (https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options in this solution, they are listed here:
 
 1. Embeddings Model
 
