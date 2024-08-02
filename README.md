@@ -1,6 +1,6 @@
 # Documents and Data Search using S/LLMs (Cloud Agnostic)
 
-The repo demonstrates how to create a solution which leverages Gen AI technologies for assisting domain specific users to achieve operational improvements.
+The repo demonstrates how to create a solution which leverages Gen AI technologies for assisting domain specific users to achieve operational improvements. It also highlights some of the ground realities of the challenges and common assumptions e.g. **Large Language Models are not necessarily required for RAG solutions** if they are only used to convert a response to a more natural sounding language.
 
 ## Primary Features
 
@@ -31,13 +31,15 @@ User would like to search existing documents, these documents can be machine man
 
 This section describes the steps which you can use to deploy this solution in your environment to try out.
 
+![K8s Setup](docs/images/rag-k8s-setup.png?raw=true "K8s Setup")
+
 ### Codespace Deployment
 
 [Add steps to deploy the solution in Codespace]
 
 ## Configuration and Extensibility
 
-This repo makes use of [Ollama] (https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options in this solution, they are listed here:
+This repo makes use of [Ollama](https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options in this solution, they are listed here:
 
 1. Embeddings Model
 
