@@ -1,6 +1,6 @@
-# Documents and Data Search using S/LLMs (Cloud Agnostic)
+# Documents and Data Search using Vector DB (Cloud Agnostic)
 
-The repo demonstrates how to create a solution which leverages Gen AI technologies for assisting domain specific users to achieve operational improvements. It also highlights some of the ground realities of the challenges and common assumptions e.g. **Large Language Models are not necessarily required for RAG solutions** if they are only used to convert a response to a more natural sounding language.
+The repo demonstrates how to create a deterministic solution which leverages Gen AI technologies for assisting domain specific users to achieve operational improvements. It also highlights some of the ground realities of the challenges and common assumptions e.g. **Large Language Models are not necessarily required for RAG solutions** if they are only used to convert a response to a more natural sounding language.
 
 ## Primary Features
 
@@ -14,6 +14,8 @@ On database search side of things, this solution addresses the challenge faced b
 Users want to search data from data stores in both well defined queries way or exploration way. This sits in-between od data analyst who are aware of the query syntaxes and business users who are limited by the IT provided user queries.
 
 ## Design Overview and Use Cases
+
+The solution makes use of Rust programming language for the core development but it does not require use of Rust on the client side i.e. consumers of this solution rely on open communication standards like GRPC or RESTFul APIs.
 
 There two primary use cases handled by this solution, they are described below along with their respective flows.
 
