@@ -276,3 +276,6 @@ __pycache__/
 # Visual Studio code coverage results
 *.coverage
 .coverage.runsettings
+
+# Chroma DB files
+chroma/

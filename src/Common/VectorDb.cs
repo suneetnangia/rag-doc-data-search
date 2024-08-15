@@ -1,93 +1,91 @@
 namespace Common;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel.Connectors.Chroma;
 
 /// <summary>
-/// Represents a vector database.
+/// Represents a vector database, Chroma DB in this implementation.
 /// </summary>
-public class VectorDb
+public class VectorDb : IVectorDb
 {
     private readonly ILogger _logger;
 
+    private readonly VectorDbOptions _vectorDbOptions;
+
     private readonly ChromaClient _chroma_client;
 
-    public VectorDb(ILogger logger, string connectionString)
+    public VectorDb(ILogger logger, IOptions<VectorDbOptions> vectorDbOptions)
     {
+        // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        // TODO: Currently implement Chroma Db but should be abstracted to support other databases.
-        _chroma_client = new ChromaClient(connectionString);
+
+        // Mixing embeddings from different language models in the same collection can be problematic.
+        _vectorDbOptions = vectorDbOptions?.Value ?? throw new ArgumentNullException(nameof(vectorDbOptions));
+        _chroma_client = new ChromaClient(_vectorDbOptions.ConnectionString);
     }
 
     /// <summary>
-    /// Inserts embeddings into the database
-    /// TODO: Only pass specific interface of LanguageModel for creating embeddings.
+    /// Add document into the vector database.    
     /// </summary>
-    public async Task AddDocumentAsync(string vectorName, LanguageModel embeddingsLanguageModel, string documentId, string document)
+    public async Task AddDocumentAsync(LanguageModel<VectorEmbeddings> embeddingsLanguageModel, string documentId, string document, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(vectorName))
-        {
-           throw new ArgumentNullException(nameof(vectorName));
-        }
-
         if (embeddingsLanguageModel is null)
         {
-           throw new ArgumentNullException(nameof(embeddingsLanguageModel));
+            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
         }
 
         if (string.IsNullOrEmpty(documentId))
         {
-           throw new ArgumentNullException(nameof(documentId));
+            throw new ArgumentNullException(nameof(documentId));
         }
 
         if (string.IsNullOrEmpty(document))
         {
-           throw new ArgumentNullException(nameof(document));
+            throw new ArgumentNullException(nameof(document));
         }
 
-        // TODO Add cancellation tokens in async calls.
-        await _chroma_client.CreateCollectionAsync(vectorName);
+        // Create collection if it does not exist, no exception if it does exist.
+        await _chroma_client.CreateCollectionAsync(_vectorDbOptions.CollectionName);
 
-        var generated_embeddings = await embeddingsLanguageModel.GenerateEmbeddings(document);        
+        var generated_embeddings = await embeddingsLanguageModel.Generate(document);
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
         var embeddings = new ReadOnlyMemory<float>[] { embedding };
         var embedding_ids = new string[] { documentId };
 
-        var collection = await _chroma_client.GetCollectionAsync(vectorName);
-        await _chroma_client.UpsertEmbeddingsAsync(collection.Id, embedding_ids, embeddings, null, CancellationToken.None);
+        var collection = await _chroma_client.GetCollectionAsync(_vectorDbOptions.CollectionName, cancellationToken) ??
+                         throw new Exception($"Vector Db collection {_vectorDbOptions.CollectionName} not found.");
 
-        _logger.LogInformation($"Inserted embeddings in vector db, document id: {documentId}");
+        await _chroma_client.UpsertEmbeddingsAsync(collection.Id, embedding_ids, embeddings, null, cancellationToken);
+
+        _logger.LogTrace($"Inserted embeddings in vector db, document id: {documentId}");
     }
 
-    public async Task<IEnumerable<Document>> GetDocumentsAsync(string vectorName, LanguageModel embeddingsLanguageModel, LanguageModel languageModel, string searchString, int maxResults = 1)
+    public async Task<IEnumerable<VectorDocument>> GetDocumentsAsync(LanguageModel<VectorEmbeddings> embeddingsLanguageModel, LanguageModel<string> languageModel, string searchString, CancellationToken cancellationToken, int maxResults = 1)
     {
-        if (string.IsNullOrEmpty(vectorName))
-        {
-           throw new ArgumentNullException(nameof(vectorName));
-        }
-
         if (embeddingsLanguageModel is null)
         {
-           throw new ArgumentNullException(nameof(embeddingsLanguageModel));
+            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
         }
 
-         if (languageModel is null)
+        if (languageModel is null)
         {
-           throw new ArgumentNullException(nameof(languageModel));
+            throw new ArgumentNullException(nameof(languageModel));
         }
 
         if (string.IsNullOrEmpty(searchString))
         {
-           throw new ArgumentNullException(nameof(searchString));
+            throw new ArgumentNullException(nameof(searchString));
         }
 
-        var generated_embeddings = await embeddingsLanguageModel.GenerateEmbeddings(searchString);
+        var generated_embeddings = await embeddingsLanguageModel.Generate(searchString);
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
         var embeddings = new ReadOnlyMemory<float>[] { embedding };
 
-        var documents = await _chroma_client.QueryEmbeddingsAsync(vectorName, embeddings, maxResults, null, CancellationToken.None);
+        // TODO: This is throwing Http 400 from ChromaDb, investigate.
+        var documents = await _chroma_client.QueryEmbeddingsAsync(_vectorDbOptions.CollectionName, embeddings, maxResults, ["documents"], cancellationToken);
 
-        return new List<Document> { new Document
+        return new List<VectorDocument> { new VectorDocument
         {
             Id = "Id",
             Text = "document.Text"

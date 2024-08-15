@@ -7,44 +7,46 @@ using Microsoft.AspNetCore.Mvc;
 [Route("[controller]")]
 public class DocumentController : ControllerBase
 {
-    private readonly Uri _ollama_base_url;
-    private readonly string _chroma_db_connection_string;
-    private readonly string _language_model;
-    private readonly string _embeddings_language_model;
     private readonly ILogger<DocumentController> _logger;
+    private readonly IVectorDb _vectorDb;
+    private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
+    private readonly LanguageModel<string> _responseLanguageModel;
 
-    public DocumentController(ILogger<DocumentController> logger)
+    public DocumentController(
+        ILogger<DocumentController> logger,
+        IVectorDb vectorDb,
+        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
+        LanguageModel<string> responseLanguageModel)
     {
-        _logger = logger;
+        // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.        
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // TODO: Inject this via DI.
-        _ollama_base_url = new Uri("http://localhost:11434/api/");
-        _chroma_db_connection_string = "http://localhost:8080";
-        _language_model = "phi3:mini";
-        _embeddings_language_model = "mxbai-embed-large";
+        _vectorDb = vectorDb ?? throw new ArgumentNullException(nameof(vectorDb));
+        _embeddingsLanguageModel = embeddingsLanguageModel ?? throw new ArgumentNullException(nameof(embeddingsLanguageModel));
+        _responseLanguageModel = responseLanguageModel ?? throw new ArgumentNullException(nameof(responseLanguageModel));
     }
 
     [HttpGet(Name = "GetDocuments")]
-    public async Task<IEnumerable<Document>> Get(string searchString, int maxResults = 1)
+    public async Task<IEnumerable<VectorDocument>> Get(string searchString, int maxResults = 1)
     {
         if (string.IsNullOrEmpty(searchString))
         {
             throw new ArgumentNullException(nameof(searchString));
         }
 
-        var vectorDb = new VectorDb(_logger, _chroma_db_connection_string);
-        var documents = await vectorDb.GetDocumentsAsync(
-            "machine_manuals",
-             new LanguageModel(_logger, _ollama_base_url, _language_model),
-             //  new LanguageModel(_logger, _ollama_base_url, _embeddings_language_model),
-             new LanguageModel(_logger, _ollama_base_url, _language_model),
-             searchString,
-             maxResults);
+        _logger.LogTrace($"Retrieving documents using search string '{searchString}'");
+
+        var documents = await _vectorDb.GetDocumentsAsync(
+            _embeddingsLanguageModel,
+            _responseLanguageModel,
+            searchString,
+            CancellationToken.None,
+            maxResults);
 
         return documents;
     }
 
-    [HttpPost(Name = "InsertDocuments")]
+    [HttpPost(Name = "AddDocuments")]
     public async Task Post(string[] documents)
     {
         if (documents is null)
@@ -52,19 +54,20 @@ public class DocumentController : ControllerBase
             throw new ArgumentNullException(nameof(documents));
         }
 
-        var vectorDb = new VectorDb(_logger, _chroma_db_connection_string);
+        // TODO: This can be optimized by parallel processing of documents.
         foreach (var document in documents)
         {
-            _logger.LogInformation($"Inserting document: {document}");
+            _logger.LogTrace($"Adding document: {document}");
 
-            // We are using GUIDs for document ids but it can be changed to something else later for better ordering of responses and disk space etc..
-            // TODO: fix bug where use of _embeddings_language_model caused exception when it's embeddings are inserted in ChromoDb.
-            await vectorDb.AddDocumentAsync(
-                "machine_manuals",
-                // new LanguageModel(_logger, _ollama_base_url, _embeddings_language_model),
-                new LanguageModel(_logger, _ollama_base_url, _language_model),
-                Guid.NewGuid().ToString(),
-                document);
+            // We are using GUIDs for document ids but it can be changed to something else later
+            // for better ordering of responses and disk space etc..
+            var documentId = Guid.NewGuid().ToString();
+
+            await _vectorDb.AddDocumentAsync(
+                _embeddingsLanguageModel,
+                documentId,
+                document,
+                CancellationToken.None);
         }
     }
 }

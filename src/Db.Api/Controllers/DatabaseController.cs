@@ -15,15 +15,14 @@ public class DatabaseController : ControllerBase
     }
 
     [HttpGet(Name = "GetData")]
-    public IEnumerable<Document> Get(string searchString)
+    public IEnumerable<VectorDocument> Get(string searchString)
     {
         throw new NotImplementedException();
-    }
+    } 
 
     [HttpPost(Name = "InsertQueries")]
     public void Post(string[] queries)
     {
         throw new NotImplementedException();
     }
-
 }
