@@ -6,6 +6,7 @@ root = true
 
 # SKEXP0020: Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 dotnet_diagnostic.SKEXP0020.severity = none
+dotnet_diagnostic.SKEXP0001.severity = none
 
 #### Core EditorConfig Options ####
 
@@ -446,3 +447,6 @@ dotnet_diagnostic.ConfigureAwaitEnforcer.severity = suggestion
 
 # CS1591: Missing XML comment for publicly visible type or member
 dotnet_diagnostic.CS1591.severity = warning
+
+# SKEXP0001: Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+dotnet_diagnostic.SKEXP0001.severity = none

@@ -1,19 +1,12 @@
+# Dev Loop Process
 
-
-ChromaDB Swagger URL
-
-http://localhost:8080/docs
-
-Swagger URL:
-
-http://localhost:5152/swagger/index.html
-
-
-https://learn.microsoft.com/en-us/dotnet/api/microsoft.semantickernel.connectors.chroma.chromaclient?view=semantic-kernel-dotnet
-
+This is work in progress document.
 
 ## Outstanding
 
-1. Configure and apply C# styling tool.
-2. Avoid returning internal errors to client.
-3. Unit and Integration Tests.
+1. Avoid returning internal errors to client.
+2. Unit and Integration Tests.
+
+## Common Errors
+
+1. "Wrong input: Not existing vector name error" occurs if a collection is created already with an incorrect vector dimension, this is not for collection not present.

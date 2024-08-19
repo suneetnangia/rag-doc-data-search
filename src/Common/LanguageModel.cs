@@ -29,10 +29,10 @@ public abstract class LanguageModel<T>
         _ollama_api_relative_url = ollamaApiRelativeUrl ?? throw new ArgumentNullException(nameof(ollamaApiRelativeUrl));
 
         // Downloads and runs the configured language model.
-        Load();
+        Load().Wait();
     }
 
-    private async void Load()
+    private async Task Load()
     {
         using (var client = new HttpClient())
         {

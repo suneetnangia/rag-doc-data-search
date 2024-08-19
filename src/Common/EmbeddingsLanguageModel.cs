@@ -26,11 +26,11 @@ public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
 
     public override async Task<VectorEmbeddings> Generate(Uri ollamaApiBaseUrl, string languageModelName, string text)
     {
-        // TODO: some this code can go in base class as shared logic, returning Http response message.
+        // TODO: Some of this code can go in base class as shared logic, returning Http response message.
         using (var client = new HttpClient())
         {
             var api_url = new Uri(ollamaApiBaseUrl, _ollamaOptions.OllamaApiEmbeddingsRelativeUrl);
-            _logger.LogTrace($"Generating embeddings using model {languageModelName}.");
+            _logger.LogTrace($"Generating embeddings using model {languageModelName}, url {api_url}.");
 
             var api_payload = JsonSerializer.Serialize(new { model = languageModelName, prompt = text });
 
@@ -46,7 +46,7 @@ public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
                         PropertyNameCaseInsensitive = true
                     }) ?? throw new NullReferenceException($"Failed deserializing embeddings using model {languageModelName}, {responseBody}.");
 
-                    _logger.LogTrace($"Embeddings generated using model {languageModelName}, count {embeddings.Embedding.Length}.");
+                    _logger.LogTrace($"Embeddings generated using model {languageModelName}, dimension count {embeddings.Embedding.Length}.");
 
                     return embeddings;
                 }

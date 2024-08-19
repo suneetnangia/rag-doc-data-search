@@ -27,22 +27,26 @@ public static class DependencyExtensions
     public static IServiceCollection AddDependencies(
          this IServiceCollection services)
     {
-        services.AddScoped<IVectorDb>(provider =>
-        {            
-            var dd = provider.GetRequiredService<IOptions<VectorDbOptions>>();
-
-            return new VectorDb(provider.GetRequiredService<ILogger<VectorDb>>(),
+        /// Singleton service for vector database, we do not want to create an instance per request.
+        services.AddSingleton<IVectorDb>(provider =>
+        {
+            var vector_db =  new QdrantVectorDb(provider.GetRequiredService<ILogger<QdrantVectorDb>>(),
                         provider.GetRequiredService<IOptions<VectorDbOptions>>());
+
+            vector_db.Init().Wait();
+            return vector_db;
         });
 
-        services.AddScoped<LanguageModel<VectorEmbeddings>>(provider =>
+        /// Singleton service for embeddings language model, we do not want to create an instance per request.        
+        services.AddSingleton<LanguageModel<VectorEmbeddings>>(provider =>
         {
             return new EmbeddingsLanguageModel(
                 provider.GetRequiredService<ILogger<EmbeddingsLanguageModel>>(),
                 provider.GetRequiredService<IOptions<OllamaOptions>>());
         });
 
-        services.AddScoped<LanguageModel<string>>(provider =>
+        /// Singleton service for response language model, we do not want to create an instance per request.
+        services.AddSingleton<LanguageModel<VectorDocument>>(provider =>
         {
             return new ResponseLanguageModel(
                 provider.GetRequiredService<ILogger<ResponseLanguageModel>>(),

@@ -8,7 +8,8 @@
         "ASPNETCORE",
         "Codespace",
         "mxbai",
-        "ollama"
+        "ollama",
+        "Qdrant"
     ],
     "ignoreWords": [],
     "import": []

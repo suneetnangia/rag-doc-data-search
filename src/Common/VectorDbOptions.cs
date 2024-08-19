@@ -6,9 +6,10 @@ namespace Common;
 public class VectorDbOptions
 {
     public const string VectorDb = "VectorDb";
+    
+    public required string HostName { get; set; }
 
-    // TODO: Move connection string out of this class to adhere to least privilege principle.
-    public required string ConnectionString { get; set; }
+    public required int HostPort { get; set; }
 
     public required string CollectionName { get; set; }
 }

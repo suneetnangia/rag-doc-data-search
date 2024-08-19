@@ -37,7 +37,15 @@ This section describes the steps which you can use to deploy this solution in yo
 
 ### Codespace Deployment
 
-[Add steps to deploy the solution in Codespace]
+[Add steps to deploy the solution in Codespace/Dev Container]
+[Add Codespace Button]
+
+### Local Deployment/Development
+
+1. clone repo ```git clone git@github.com:suneetnangia/rag-doc-data-search.git && cd rag-doc-data-search```
+2. Install dependent services ```make setup```
+3. Run document search service ```cd src/Doc.Api && dotnet run```
+4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
 
 ## Configuration and Extensibility
 

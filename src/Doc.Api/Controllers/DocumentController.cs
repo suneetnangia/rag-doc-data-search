@@ -10,13 +10,13 @@ public class DocumentController : ControllerBase
     private readonly ILogger<DocumentController> _logger;
     private readonly IVectorDb _vectorDb;
     private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
-    private readonly LanguageModel<string> _responseLanguageModel;
+    private readonly LanguageModel<VectorDocument> _responseLanguageModel;
 
     public DocumentController(
         ILogger<DocumentController> logger,
         IVectorDb vectorDb,
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<string> responseLanguageModel)
+        LanguageModel<VectorDocument> responseLanguageModel)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.        
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -26,12 +26,17 @@ public class DocumentController : ControllerBase
         _responseLanguageModel = responseLanguageModel ?? throw new ArgumentNullException(nameof(responseLanguageModel));
     }
 
-    [HttpGet(Name = "GetDocuments")]
-    public async Task<IEnumerable<VectorDocument>> Get(string searchString, int maxResults = 1)
+    [HttpGet]
+    public async Task<IActionResult> Get(string searchString, float minResultScore = 0.5f, ulong maxResults = 1)
     {
         if (string.IsNullOrEmpty(searchString))
         {
             throw new ArgumentNullException(nameof(searchString));
+        }
+
+        if (maxResults < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxResults), "Max results must be greater than 0.");
         }
 
         _logger.LogTrace($"Retrieving documents using search string '{searchString}'");
@@ -41,13 +46,15 @@ public class DocumentController : ControllerBase
             _responseLanguageModel,
             searchString,
             CancellationToken.None,
+            minResultScore,
             maxResults);
 
-        return documents;
+        // Return Http 200 OK with the documents.
+        return Ok(documents);
     }
 
-    [HttpPost(Name = "AddDocuments")]
-    public async Task Post(string[] documents)
+    [HttpPost]
+    public async Task<IActionResult> Post(string[] documents)
     {
         if (documents is null)
         {
@@ -61,7 +68,7 @@ public class DocumentController : ControllerBase
 
             // We are using GUIDs for document ids but it can be changed to something else later
             // for better ordering of responses and disk space etc..
-            var documentId = Guid.NewGuid().ToString();
+            var documentId = Guid.NewGuid();
 
             await _vectorDb.AddDocumentAsync(
                 _embeddingsLanguageModel,
@@ -69,5 +76,7 @@ public class DocumentController : ControllerBase
                 document,
                 CancellationToken.None);
         }
+
+        return Ok();
     }
 }
