@@ -279,3 +279,4 @@ __pycache__/
 
 # Chroma DB files
 chroma/
+qdrant_storage/
