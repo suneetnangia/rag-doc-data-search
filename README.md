@@ -1,59 +1,52 @@
 # Documents and Data Search using Vector DB (Cloud Agnostic)
 
-The repo demonstrates how to create a deterministic solution which leverages Gen AI technologies for assisting domain specific users to achieve operational improvements. It also highlights some of the ground realities of the challenges and common assumptions e.g. **Large Language Models are not necessarily required for RAG solutions** if they are only used to convert a response to a more natural sounding language.
+The repo demonstrates the deterministic solution for searching documents and data, it leverages the Gen AI technologies for assisting end users with their domain specific searches. It also highlights some of the ground realities and common assumptions in this space e.g. **Large Language Models (LLMs) are absolutely required for RAG solutions**. In RAG solutions, S/LLMs are only used to convert the response to a more natural sounding language whereas the actual search is provided by vector database. Use of S/LLMs often result in hallucinations and inaccurate results when used in a straight through processing, it isn't suitable for matters of consequence.
 
 ## Primary Features
 
-1. Search the pre-indexed documents using vector DB and respond in natural language using S/LLM models.
-2. Search the databases (e.g. Influx, SQL) using predefined queries Vector DB or synthesized by S/LLM model, and respond in natural language using S/LLM models.
-
-## Persona Alignment (Database Search)
-
-On database search side of things, this solution addresses the challenge faced by non IT users who'd benefit from data exploration apart from well thought-out and predefined queries written by IT upfront.
-
-Users want to search data from data stores in both well defined queries way or exploration way. This sits in-between od data analyst who are aware of the query syntaxes and business users who are limited by the IT provided user queries.
+1. Search the pre-indexed documents using vector DB and respond in natural language using S/LLM models, optionally.
+2. Search the databases (e.g. Influx, SQL) using predefined queries in vector DB or synthesized by S/LLM model, and respond in natural language using S/LLM models, optionally.
 
 ## Design Overview and Use Cases
 
-The solution makes use of Rust programming language for the core development but it does not require use of Rust on the client side i.e. consumers of this solution rely on open communication standards like GRPC or RESTFul APIs.
-
-There two primary use cases handled by this solution, they are described below along with their respective flows.
+There two primary and basic use cases handled by this solution, they are described below along with their respective flows.
 
 ### Document Search
 
-User would like to search existing documents, these documents can be machine manuals in industrial domain, regulatory/compliance policies in financial domain.
+User would like to search existing documents, these documents can be machine manuals in industrial domain or regulatory/compliance policies in financial domain.
 
 ![Document Search Process](docs/images/rag-doc-process.png?raw=true "Document Search Process")
 
-### Database Search
+### Database Search [WIP]
+
+On database search side of things, this solution addresses the challenge faced by non IT users who'd benefit from data exploration apart from well thought-out and predefined queries written by IT upfront.
 
 ![Database Search Process](docs/images/rag-db-process.png?raw=true "Database Search Process")
 
 ## Deployment
 
-This section describes the steps which you can use to deploy this solution in your environment to try out.
-
-![K8s Setup](docs/images/rag-k8s-setup.png?raw=true "K8s Setup")
+This section describes the steps to deploy this solution in your environment.
 
 ### Codespace Deployment
 
 [Add steps to deploy the solution in Codespace/Dev Container]
 [Add Codespace Button]
 
-### Local Deployment/Development
+### Local Deployment/Development on WSL/Linux
 
-1. clone repo ```git clone git@github.com:suneetnangia/rag-doc-data-search.git && cd rag-doc-data-search```
+1. Clone repo ```git clone git@github.com:suneetnangia/rag-doc-data-search.git && cd rag-doc-data-search```
 2. Install dependent services ```make setup```
 3. Run document search service ```cd src/Doc.Api && dotnet run```
 4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
 
 ## Configuration and Extensibility
 
-This repo makes use of [Ollama](https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options in this solution, they are listed here:
+This repo makes use of [Ollama](https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options along with vector db options in this solution, they can be configured via [appsettings](src/Doc.Api/appsettings.Development.json).
 
-1. Embeddings Model
+## Extension Repos [WIP]
 
-   Allows you to change embeddings model which is responsible for creating vector DB embeddings from the documents.
-2. S/LLM Model
+These repos provide layers on top of this solution, to provide an on-ramp for various use cases.
 
-   Allows you to change S/LLM model used to generate natural language responses for your database or doc queries.
+1. CLI Repo: Provides access to the solution via CLI interface for scripting and automating.
+2. Bootstrapping Repo: Loads sample data in the solution.
+3. K8s Repo: Deploys the solution in K8s setting using sidecar pattern.

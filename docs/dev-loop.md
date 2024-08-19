@@ -5,7 +5,8 @@ This is work in progress document.
 ## Outstanding
 
 1. Avoid returning internal errors to client.
-2. Unit and Integration Tests.
+2. Enable streaming endpoint on API for immediate response from S/LLMs.
+3. Unit and Integration Tests.
 
 ## Common Errors
 

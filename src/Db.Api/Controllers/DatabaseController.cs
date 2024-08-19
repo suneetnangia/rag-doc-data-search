@@ -15,7 +15,7 @@ public class DatabaseController : ControllerBase
     }
 
     [HttpGet(Name = "GetData")]
-    public IEnumerable<VectorDocument> Get(string searchString)
+    public IEnumerable<VectorResponse> Get(string searchString)
     {
         throw new NotImplementedException();
     } 

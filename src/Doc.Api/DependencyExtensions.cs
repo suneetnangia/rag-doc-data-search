@@ -33,6 +33,7 @@ public static class DependencyExtensions
             var vector_db =  new QdrantVectorDb(provider.GetRequiredService<ILogger<QdrantVectorDb>>(),
                         provider.GetRequiredService<IOptions<VectorDbOptions>>());
 
+            // TODO: Cancellation token should be passed here.
             vector_db.Init().Wait();
             return vector_db;
         });
@@ -46,11 +47,11 @@ public static class DependencyExtensions
         });
 
         /// Singleton service for response language model, we do not want to create an instance per request.
-        services.AddSingleton<LanguageModel<VectorDocument>>(provider =>
+        services.AddSingleton<LanguageModel<LanguageResponse>>(provider =>
         {
             return new ResponseLanguageModel(
                 provider.GetRequiredService<ILogger<ResponseLanguageModel>>(),
-              provider.GetRequiredService<IOptions<OllamaOptions>>());
+                provider.GetRequiredService<IOptions<OllamaOptions>>());
         });
 
         return services;

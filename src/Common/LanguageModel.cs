@@ -63,19 +63,20 @@ public abstract class LanguageModel<T>
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public Task<T> Generate(string text)
+    public Task<T> Generate(string text, CancellationToken cancellationToken)
     {
-        return Generate(_ollama_api_base_url, _language_model_name, text);
+        return Generate(_ollama_api_base_url, _language_model_name, text, cancellationToken);
     }
 
     /// <summary>
-    /// Implemented by derived classes which generates human readable response or embeddings using the language model.
+    /// Implemented by derived classes which generates human readable response or embeddings using the language model.    
     /// </summary>
     /// <param name="ollamaBaseUrl"></param>
     /// <param name="languageModelName"></param>
     /// <param name="text"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public abstract Task<T> Generate(Uri ollamaBaseUrl, string languageModelName, string text);
+    public abstract Task<T> Generate(Uri ollamaBaseUrl, string languageModelName, string text, CancellationToken cancellationToken);
 
     public void Unload()
     {

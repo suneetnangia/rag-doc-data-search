@@ -3,10 +3,10 @@ namespace Common;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Represents a document, add any additional document attributes here.
+/// Represents a response from vector db.
 /// </summary>
 [Serializable]
-public class VectorDocument {
+public class VectorResponse {
     [JsonInclude]
     public required string Id;
 

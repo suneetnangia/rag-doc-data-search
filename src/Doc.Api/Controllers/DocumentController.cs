@@ -10,13 +10,13 @@ public class DocumentController : ControllerBase
     private readonly ILogger<DocumentController> _logger;
     private readonly IVectorDb _vectorDb;
     private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
-    private readonly LanguageModel<VectorDocument> _responseLanguageModel;
+    private readonly LanguageModel<LanguageResponse> _responseLanguageModel;
 
     public DocumentController(
         ILogger<DocumentController> logger,
         IVectorDb vectorDb,
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<VectorDocument> responseLanguageModel)
+        LanguageModel<LanguageResponse> responseLanguageModel)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.        
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -27,7 +27,7 @@ public class DocumentController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get(string searchString, float minResultScore = 0.5f, ulong maxResults = 1)
+    public async Task<IActionResult> Get(string searchString, bool useLanguageResponse = false, float minResultScore = 0.5f, ulong maxResults = 1)
     {
         if (string.IsNullOrEmpty(searchString))
         {
@@ -43,9 +43,9 @@ public class DocumentController : ControllerBase
 
         var documents = await _vectorDb.GetDocumentsAsync(
             _embeddingsLanguageModel,
-            _responseLanguageModel,
+            useLanguageResponse ? _responseLanguageModel : null,
             searchString,
-            CancellationToken.None,
+            HttpContext.RequestAborted,
             minResultScore,
             maxResults);
 
@@ -74,7 +74,7 @@ public class DocumentController : ControllerBase
                 _embeddingsLanguageModel,
                 documentId,
                 document,
-                CancellationToken.None);
+                HttpContext.RequestAborted);
         }
 
         return Ok();

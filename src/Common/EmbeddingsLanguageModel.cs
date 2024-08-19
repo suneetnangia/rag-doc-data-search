@@ -24,7 +24,7 @@ public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
         _ollamaOptions = ollamaOptions?.Value ?? throw new ArgumentNullException(nameof(ollamaOptions));        
     }
 
-    public override async Task<VectorEmbeddings> Generate(Uri ollamaApiBaseUrl, string languageModelName, string text)
+    public override async Task<VectorEmbeddings> Generate(Uri ollamaApiBaseUrl, string languageModelName, string text, CancellationToken cancellationToken)
     {
         // TODO: Some of this code can go in base class as shared logic, returning Http response message.
         using (var client = new HttpClient())
@@ -36,7 +36,7 @@ public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
 
             using (var content = new StringContent(api_payload, Encoding.UTF8, Application.Json))
             {
-                var response = await client.PostAsync(api_url, content);
+                var response = await client.PostAsync(api_url, content, cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     var responseBody = await response.Content.ReadAsStringAsync();
