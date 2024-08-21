@@ -35,7 +35,7 @@ This section describes the steps to deploy this solution in your environment.
 
 2. Install dependent services ```make setup```
 3. Run document search service ```cd src/Doc.Api && dotnet run```
-4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
+4. Open Swagger link to try the APIs. If you are running the codespace Visual Studio Code Desktop, you can use ```http://localhost:5152/swagger/index.html```. In case you are running the codespace in the browser, you can get the hostname from the Ports tab. Copy the URL and append ```/swagger/index.html``` to it, open in a new browser window.
 
 > Note: optionally you can also open the Dev Container locally by first cloning this repo, opening it in Visual Studio Code and choosing **Ctrl/Cmd + Shift + P > Dev Containers: Reopen in container**.
 
