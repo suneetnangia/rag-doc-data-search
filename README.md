@@ -37,6 +37,8 @@ This section describes the steps to deploy this solution in your environment.
 3. Run document search service ```cd src/Doc.Api && dotnet run```
 4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
 
+> Note: optionally you can also open the Dev Container locally by first cloning this repo, opening it in Visual Studio Code and choosing **Ctrl/Cmd + Shift + P > Dev Containers: Reopen in container**.
+
 ### Local Deployment/Development on WSL/Linux
 
 1. Clone repo ```git clone git@github.com:suneetnangia/rag-doc-data-search.git && cd rag-doc-data-search```
