@@ -29,8 +29,13 @@ This section describes the steps to deploy this solution in your environment.
 
 ### Codespace Deployment
 
-[Add steps to deploy the solution in Codespace/Dev Container]
-[Add Codespace Button]
+1. Open this codespace in your browser or in your local Visual Studio Code.
+
+    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/suneetnangia/rag-doc-data-search/)
+
+2. Install dependent services ```make setup```
+3. Run document search service ```cd src/Doc.Api && dotnet run```
+4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
 
 ### Local Deployment/Development on WSL/Linux
 
