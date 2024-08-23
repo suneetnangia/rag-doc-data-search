@@ -12,48 +12,51 @@ using static System.Net.Mime.MediaTypeNames;
 public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
 {
     private readonly ILogger _logger;
+    private readonly HttpClient _http_client;
+    private readonly Uri _ollama_embeddings_relative_url;
 
-    private readonly OllamaOptions _ollamaOptions;
-    
-    public EmbeddingsLanguageModel(ILogger logger, IOptions<OllamaOptions> ollamaOptions)
-    : base(logger, new Uri(ollamaOptions.Value.OllamaApiBaseUrl), new Uri(ollamaOptions.Value.OllamaApiPullRelativeUrl, UriKind.Relative), ollamaOptions.Value.EmbeddingsLanguageModelName)
+    public EmbeddingsLanguageModel(ILogger logger, HttpClient httpClient, IOptions<OllamaOptions> ollamaOptions)
+    : base(logger, httpClient, new Uri(ollamaOptions.Value.OllamaApiPullRelativeUrl, UriKind.Relative), ollamaOptions.Value.EmbeddingsLanguageModelName)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        _http_client = httpClient ?? throw new ArgumentNullException(nameof(httpClient));        
         
-        _ollamaOptions = ollamaOptions?.Value ?? throw new ArgumentNullException(nameof(ollamaOptions));        
+        if (ollamaOptions is null)
+        {
+            throw new ArgumentNullException(nameof(ollamaOptions));
+        }
+
+        _ollama_embeddings_relative_url = new Uri(ollamaOptions.Value.OllamaApiEmbeddingsRelativeUrl, UriKind.Relative);
     }
 
-    public override async Task<VectorEmbeddings> Generate(Uri ollamaApiBaseUrl, string languageModelName, string text, CancellationToken cancellationToken)
+    public override async Task<VectorEmbeddings> Generate(string languageModelName, string text, CancellationToken cancellationToken)
     {
         // TODO: Some of this code can go in base class as shared logic, returning Http response message.
-        using (var client = new HttpClient())
+        _logger.LogTrace($"Generating embeddings using model {languageModelName}, base url {_http_client.BaseAddress}, relative url {_ollama_embeddings_relative_url}.");
+
+        var api_payload = JsonSerializer.Serialize(new { model = languageModelName, prompt = text });
+
+        using (var content = new StringContent(api_payload, Encoding.UTF8, Application.Json))
         {
-            var api_url = new Uri(ollamaApiBaseUrl, _ollamaOptions.OllamaApiEmbeddingsRelativeUrl);
-            _logger.LogTrace($"Generating embeddings using model {languageModelName}, url {api_url}.");
-
-            var api_payload = JsonSerializer.Serialize(new { model = languageModelName, prompt = text });
-
-            using (var content = new StringContent(api_payload, Encoding.UTF8, Application.Json))
+            var response = await _http_client.PostAsync(_ollama_embeddings_relative_url, content, cancellationToken);
+            if (response.IsSuccessStatusCode)
             {
-                var response = await client.PostAsync(api_url, content, cancellationToken);
-                if (response.IsSuccessStatusCode)
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                var embeddings = JsonSerializer.Deserialize<VectorEmbeddings>(responseBody, new JsonSerializerOptions
                 {
-                    var responseBody = await response.Content.ReadAsStringAsync();
+                    PropertyNameCaseInsensitive = true
+                }) ?? throw new NullReferenceException($"Failed deserializing embeddings using model {languageModelName}, {responseBody}.");
 
-                    var embeddings = JsonSerializer.Deserialize<VectorEmbeddings>(responseBody, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    }) ?? throw new NullReferenceException($"Failed deserializing embeddings using model {languageModelName}, {responseBody}.");
+                _logger.LogTrace($"Embeddings generated using model {languageModelName}, dimension count {embeddings.Embedding.Length}.");
 
-                    _logger.LogTrace($"Embeddings generated using model {languageModelName}, dimension count {embeddings.Embedding.Length}.");
-
-                    return embeddings;
-                }
-                else
-                {
-                    throw new ApplicationException($"Failed to generate embeddings using model {languageModelName}, {response}.");
-                }
+                return embeddings;
+            }
+            else
+            {
+                throw new ApplicationException($"Failed to generate embeddings using model {languageModelName}, {response}.");
             }
         }
     }

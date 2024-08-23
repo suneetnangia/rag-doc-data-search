@@ -21,6 +21,9 @@ public static class DependencyExtensions
         services.Configure<OllamaOptions>(
                    config.GetSection(OllamaOptions.VectorDb));
 
+        services.Configure<InfluxDbOptions>(
+                    config.GetSection(InfluxDbOptions.InfluxDb));
+
         services.AddHttpClient();
 
         return services;
@@ -38,6 +41,14 @@ public static class DependencyExtensions
             // TODO: Cancellation token should be passed here.
             vector_db.Init().Wait();
             return vector_db;
+        });
+
+        services.AddSingleton<InfluxDbRepository>(provider =>
+        {
+            var influx_db = new InfluxDbRepository(provider.GetRequiredService<ILogger<InfluxDbRepository>>(),
+                        provider.GetRequiredService<IOptions<InfluxDbOptions>>());
+
+            return influx_db;
         });
 
         /// Singleton service for embeddings language model, we do not want to create an instance per request.        

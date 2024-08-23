@@ -41,7 +41,7 @@ public class DocumentController : ControllerBase
 
         _logger.LogTrace($"Retrieving documents using search string '{searchString}'");
 
-        var documents = await _vectorDb.GetDocumentsAsync(
+        var searchResponses = await _vectorDb.GetDocumentsAsync(
             _embeddingsLanguageModel,
             useLanguageResponse ? _responseLanguageModel : null,
             searchString,
@@ -50,7 +50,7 @@ public class DocumentController : ControllerBase
             maxResults);
 
         // Return Http 200 OK with the documents.
-        return Ok(documents);
+        return Ok(searchResponses);
     }
 
     [HttpPost]

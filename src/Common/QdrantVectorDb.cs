@@ -1,5 +1,6 @@
 namespace Common;
 
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Qdrant.Client;
@@ -12,7 +13,7 @@ public class QdrantVectorDb : IVectorDb
 {
     private readonly ILogger _logger;
 
-    private readonly string _vectorDbCollectionName;    
+    private readonly string _vectorDbCollectionName;
 
     private readonly QdrantClient _vector_db_client;
 
@@ -93,7 +94,7 @@ public class QdrantVectorDb : IVectorDb
         _logger.LogTrace($"Inserted embeddings in vector db, document : {result}");
     }
 
-    public async Task<IEnumerable<Task<SearchResponse>>> GetDocumentsAsync(
+    public async Task<IEnumerable<Task<SearchResponse?>>> GetDocumentsAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         LanguageModel<LanguageResponse>? responseLanguageModel,
         string searchString,
@@ -162,5 +163,107 @@ public class QdrantVectorDb : IVectorDb
         _logger.LogTrace($"Returning response(s) from vector db and S/LLM, vector db had total of {total_documents} documents.");
 
         return searchResponses;
+    }
+
+    public async Task<DataQueryResponse?> GetDataAsync(
+        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
+        LanguageModel<LanguageResponse>? responseLanguageModel,
+        InfluxDbRepository influxDbRepository,
+        string queryString,
+        CancellationToken cancellationToken,
+        float minResultScore)
+    {
+        if (embeddingsLanguageModel is null)
+        {
+            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
+        }
+
+        if (responseLanguageModel is null)
+        {
+            _logger.LogTrace("Response language model is not provided, using only vector db responses.");
+        }
+
+        if (influxDbRepository is null)
+        {
+            throw new ArgumentNullException(nameof(influxDbRepository));
+        }
+
+        if (string.IsNullOrEmpty(queryString))
+        {
+            throw new ArgumentNullException(nameof(queryString));
+        }
+
+        if (minResultScore < 0.0f || minResultScore > 1.0f)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minResultScore));
+        }
+
+        var generated_embeddings = await embeddingsLanguageModel.Generate(queryString, cancellationToken);
+        var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
+
+        var total_documents = await _vector_db_client.CountAsync(_vectorDbCollectionName, cancellationToken: cancellationToken);
+
+        var documents = await _vector_db_client.SearchAsync(
+            _vectorDbCollectionName,
+            embedding,
+            limit: 1, // Return only first document.
+            scoreThreshold: minResultScore,
+            payloadSelector: true,
+            cancellationToken: cancellationToken);
+
+        if (documents.Count > 0)
+        {
+            // TODO: Verify the first document with highest score is returned.
+            var document = documents[0];
+
+            // TODO: "document" key should come from the schema/strong type for the payload.
+            var string_document = document.Payload?["document"]?.ToString();
+            var json_document = JsonDocument.Parse(string_document);
+
+            // TODO: "stringValue" key should come from the schema/strong type for the payload.
+            var db_query = json_document.RootElement.GetProperty("stringValue").GetString();
+
+            // TODO: "organization" should come from configuration.
+            var data = await influxDbRepository.QueryAsync(db_query, "organization");
+
+            // TODO: Prompt creation must be be made configurable to fine tune it.                        
+            var data_string =  JsonSerializer.Serialize(data.Raw);
+            var prompt = $"Using this data {data_string} Respond to this prompt: {queryString} without any additional information.";
+
+            _logger.LogTrace($"Executing language model to generate response for the prompt '{prompt}'.");
+
+            var languageResponse = responseLanguageModel is null ? null : await responseLanguageModel.Generate(prompt, cancellationToken);
+
+            var dataQueryResponse = new DataQueryResponse
+            {
+                VectorResponse = new VectorResponse
+                {
+                    Id = document.Id.Uuid,
+                    Score = document.Score,
+                    Text = document.Payload.ToString()
+                },
+                DatabaseQueryResponse = new InfluxDatabaseResponse
+                {
+                    Raw = data.Raw
+                },
+                LanguageResponse = languageResponse is null ? null : new LanguageResponse
+                {
+                    Model = languageResponse.Model,
+                    CreatedAt = languageResponse.CreatedAt,
+                    Done = languageResponse.Done,
+                    DoneReason = languageResponse.DoneReason,
+                    Response = languageResponse.Response
+                }
+            };
+
+            _logger.LogTrace($"Returning response(s) from vector db and S/LLM (optionally), vector db had total of {total_documents} documents.");
+
+            return dataQueryResponse;
+        }
+        else
+        {
+            _logger.LogTrace($"No database query was found in the vector db, total queries in vector db are {total_documents}.");
+            return null;
+        }        
     }
 }

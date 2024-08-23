@@ -17,7 +17,7 @@ User would like to search existing documents, these documents can be machine man
 
 ![Document Search Process](docs/images/rag-doc-process.png?raw=true "Document Search Process")
 
-### Database Search [WIP]
+### Database Search
 
 On database search side of things, this solution addresses the challenge faced by non IT users who'd benefit from data exploration apart from well thought-out and predefined queries written by IT upfront.
 
