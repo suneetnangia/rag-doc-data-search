@@ -54,15 +54,16 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post(string[] documents)
+    [Produces("application/json")]
+    public async Task<IActionResult> Post(QdrantDocumentVectorPayload[] payloads)
     {
-        if (documents is null)
+        if (payloads is null)
         {
-            throw new ArgumentNullException(nameof(documents));
+            throw new ArgumentNullException(nameof(payloads));
         }
 
         // TODO: This can be optimized by parallel processing of documents.
-        foreach (var document in documents)
+        foreach (var document in payloads)
         {
             _logger.LogTrace($"Adding document: {document}");
 

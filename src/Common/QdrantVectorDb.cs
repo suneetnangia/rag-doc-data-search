@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
+using System.Reflection;
+using Google.Protobuf.Collections;
 
 /// <summary>
 /// Represents a specific implementation of vector database.
@@ -58,7 +60,7 @@ public class QdrantVectorDb : IVectorDb
     public async Task AddDocumentAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
-        string document,
+        VectorDbPayload payload,
         CancellationToken cancellationToken)
     {
         if (embeddingsLanguageModel is null)
@@ -71,25 +73,30 @@ public class QdrantVectorDb : IVectorDb
             throw new ArgumentOutOfRangeException(nameof(documentId));
         }
 
-        if (string.IsNullOrEmpty(document))
+        if (payload is null)
         {
-            throw new ArgumentNullException(nameof(document));
+            throw new ArgumentNullException(nameof(payload));
         }
 
-        var generated_embeddings = await embeddingsLanguageModel.Generate(document, cancellationToken);
-
-        var result = await _vector_db_client.UpsertAsync(_vectorDbCollectionName, new List<PointStruct>
+        var generated_embeddings = await embeddingsLanguageModel.Generate(payload.Document, cancellationToken);
+        var pointStruct = new PointStruct
+        {
+           
+            Id = documentId,
+            Vectors = generated_embeddings.Embedding,
+                
+        };
+        foreach (PropertyInfo property in payload.GetType().GetProperties())
+        {
+            if (property.GetValue(payload) == null)
             {
-                new()
-                {
-                    Id = documentId,
-                    Vectors = generated_embeddings.Embedding,
-                    Payload = {
-                        // TODO: This can be optimized by defining schema/strong type for the payload which can include any key-value pairs.
-                        ["document"] = document,
-                    }
-                }
-            }, cancellationToken: cancellationToken);
+                continue;
+            }
+            // TODO: currently we are assuming that all properties are strings, can be improved to handle other types
+            pointStruct.Payload[property.Name.ToLowerInvariant()] = property.GetValue(payload)?.ToString() ?? string.Empty;
+        }
+        var pointStructList = new List<PointStruct> { pointStruct };
+        var result = await _vector_db_client.UpsertAsync(_vectorDbCollectionName, pointStructList, cancellationToken: cancellationToken);
 
         _logger.LogTrace($"Inserted embeddings in vector db, document : {result}");
     }
@@ -131,12 +138,17 @@ public class QdrantVectorDb : IVectorDb
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
 
         var total_documents = await _vector_db_client.CountAsync(_vectorDbCollectionName, cancellationToken: cancellationToken);
+        // TODO: evaluate using search on payload schema names and not only on embeddings
         var documents = await _vector_db_client.SearchAsync(_vectorDbCollectionName, embedding, limit: maxResults, scoreThreshold: minResultScore, payloadSelector: true, cancellationToken: cancellationToken);
 
+        // TODO: this can be changed to have LLM prompt with RAG from all documents instead one by one, to have a consolidated answer
         var searchResponses = documents.Select(async doc =>
             {
+                QdrantDocumentVectorPayload queryDocument = DeserializePayload<QdrantDocumentVectorPayload>(doc.Payload);
+                
                 // TODO: Prompt creation must be be made configurable to fine tune it.
-                var prompt = $"Using this data {doc.Payload.ToString()} Respond to this prompt: {searchString} without any additional information.";
+                var prompt = $"Using this data {queryDocument.Document} Respond to this prompt: {searchString} without any additional information.";
+                _logger.LogTrace($"Executing language model to generate response for the prompt '{prompt}'.");
 
                 var languageResponse = responseLanguageModel is null ? null : await responseLanguageModel.Generate(prompt, cancellationToken);
 
@@ -217,11 +229,11 @@ public class QdrantVectorDb : IVectorDb
             var document = documents[0];
 
             // TODO: "document" key should come from the schema/strong type for the payload.
-            var string_document = document.Payload?["document"]?.ToString();
-            var json_document = JsonDocument.Parse(string_document);
+            QdrantQueryDataVectorPayload queryDocument = DeserializePayload<QdrantQueryDataVectorPayload>(document.Payload);
+            _logger.LogTrace($"The fields are filled in '{queryDocument.Document}' / and query {queryDocument.Query}.");
 
             // TODO: "stringValue" key should come from the schema/strong type for the payload.
-            var db_query = json_document.RootElement.GetProperty("stringValue").GetString();
+            var db_query = queryDocument.Query;
 
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(db_query, "organization");
@@ -266,4 +278,29 @@ public class QdrantVectorDb : IVectorDb
             return null;
         }        
     }
+
+    private T DeserializePayload<T>(MapField<string, Value> payload)
+    {
+        var result = Activator.CreateInstance<T>();
+        var properties = typeof(T).GetProperties();
+       
+       foreach (var property in properties)
+        {
+            if (payload.TryGetValue(property.Name.ToLowerInvariant(), out var value))
+            {
+                if (property.PropertyType == typeof(string) && value.KindCase == Value.KindOneofCase.StringValue)
+                {
+                    property.SetValue(result, value.StringValue);
+                }
+                else if (property.PropertyType == typeof(double) && value.KindCase == Value.KindOneofCase.DoubleValue)
+                {
+                    property.SetValue(result, value.DoubleValue);
+                }
+                // Add more type checks and conversions as needed
+            }
+        }
+
+        return result;
+    }
+
 }

@@ -52,7 +52,7 @@ public class DatabaseController : ControllerBase
     } 
 
     [HttpPost]
-    public async Task<IActionResult> Post(string[] queries)
+    public async Task<IActionResult> Post(QdrantQueryDataVectorPayload[] queries)
     {
         if (queries is null)
         {
