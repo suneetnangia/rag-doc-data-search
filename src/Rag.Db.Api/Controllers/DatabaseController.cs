@@ -1,25 +1,26 @@
-namespace Db.Api.Controllers;
+namespace Rag.Db.Api.Controllers;
 
-using Common;
 using Microsoft.AspNetCore.Mvc;
+using Rag.Common;
 
 [ApiController]
 [Route("[controller]")]
 public class DatabaseController : ControllerBase
-{   
+{
     private readonly ILogger<DatabaseController> _logger;
     private readonly IVectorDb _vectorDb;
     private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
     private readonly LanguageModel<LanguageResponse> _responseLanguageModel;
     private readonly InfluxDbRepository _influxDbRepository;
 
-    public DatabaseController( ILogger<DatabaseController> logger,
+    public DatabaseController(
+        ILogger<DatabaseController> logger,
         IVectorDb vectorDb,
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         LanguageModel<LanguageResponse> responseLanguageModel,
         InfluxDbRepository influxDbRepository)
     {
-         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.        
+        // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _vectorDb = vectorDb ?? throw new ArgumentNullException(nameof(vectorDb));
@@ -31,10 +32,10 @@ public class DatabaseController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get(string queryString, bool useLanguageResponse = false, float minResultScore = 0.5f)
     {
-       if (string.IsNullOrEmpty(queryString))
+        if (string.IsNullOrEmpty(queryString))
         {
             throw new ArgumentNullException(nameof(queryString));
-        }       
+        }
 
         _logger.LogTrace($"Retrieving documents using search string '{queryString}'");
 
@@ -49,7 +50,7 @@ public class DatabaseController : ControllerBase
 
         // Return Http 200 OK with the documents.
         return Ok(queryResponse);
-    } 
+    }
 
     [HttpPost]
     public async Task<IActionResult> Post(string[] queries)

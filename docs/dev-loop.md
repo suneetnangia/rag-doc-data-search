@@ -10,7 +10,7 @@ This is a work in progress document.
 
 Load air quality sample data from the following annotated csv file, using [Influx Db web UI](http://localhost:8086).
 
-https://raw.githubusercontent.com/influxdata/influxdb2-sample-data/master/air-sensor-data/air-sensor-data-annotated.csv
+<https://raw.githubusercontent.com/influxdata/influxdb2-sample-data/master/air-sensor-data/air-sensor-data-annotated.csv>
 
 #### Queries
 
@@ -41,4 +41,3 @@ from(bucket: "air_quality")
 1. [Qdrant UI Dashboard](http://localhost:6333/dashboard)
 2. [Influx Db web UI](http://localhost:8086)
 3. Ollama UI [https://github.com/open-webui/open-webui]
-

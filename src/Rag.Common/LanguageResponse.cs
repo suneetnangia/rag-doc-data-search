@@ -1,4 +1,4 @@
-namespace Common;
+namespace Rag.Common;
 
 using System.Text.Json.Serialization;
 
@@ -6,28 +6,29 @@ using System.Text.Json.Serialization;
 /// Represents a response from the language model returned from Ollama.
 /// </summary>
 [Serializable]
-public class LanguageResponse {
+public class LanguageResponse
+{
     [JsonInclude]
     [JsonPropertyName("model")]
-    public required string Model;
+    public required string Model { get; set; }
 
-    [JsonInclude()]
+    [JsonInclude]
     [JsonPropertyName("created_at")]
-    public required string CreatedAt;
+    public required string CreatedAt { get; set; }
 
     [JsonInclude]
     [JsonPropertyName("response")]
-    public required string Response;
+    public required string Response { get; set; }
 
     [JsonInclude]
     [JsonPropertyName("done")]
-    public required bool Done;
+    public required bool Done { get; set; }
 
     [JsonInclude]
     [JsonPropertyName("done_reason")]
-    public required string DoneReason;
+    public required string DoneReason { get; set; }
 
     [JsonInclude]
     [JsonPropertyName("context")]
-    public int[]? Context;
+    public int[]? Context { get; set; }
 }

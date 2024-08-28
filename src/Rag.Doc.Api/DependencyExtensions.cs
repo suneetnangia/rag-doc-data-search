@@ -1,9 +1,9 @@
-
 namespace Microsoft.Extensions.DependencyInjection;
 
 using Microsoft.Extensions.Configuration;
-using Common;
 using Microsoft.Extensions.Options;
+
+using Rag.Common;
 
 public static class DependencyExtensions
 {
@@ -29,18 +29,19 @@ public static class DependencyExtensions
     public static IServiceCollection AddDependencies(
          this IServiceCollection services)
     {
-        /// Singleton service for vector database, we do not want to create an instance per request.
+        // Singleton service for vector database, we do not want to create an instance per request.
         services.AddSingleton<IVectorDb>(provider =>
         {
-            var vector_db = new QdrantVectorDb(provider.GetRequiredService<ILogger<QdrantVectorDb>>(),
-                        provider.GetRequiredService<IOptions<VectorDbOptions>>());
+            var vector_db = new QdrantVectorDb(
+                provider.GetRequiredService<ILogger<QdrantVectorDb>>(),
+                provider.GetRequiredService<IOptions<VectorDbOptions>>());
 
             // TODO: Cancellation token should be passed here.
             vector_db.Init().Wait();
             return vector_db;
         });
 
-        /// Singleton service for embeddings language model, we do not want to create an instance per request.        
+        // Singleton service for embeddings language model, we do not want to create an instance per request.
         services.AddSingleton<LanguageModel<VectorEmbeddings>>(provider =>
         {
             var http_client = provider.GetRequiredService<HttpClient>();
@@ -55,7 +56,7 @@ public static class DependencyExtensions
                 provider.GetRequiredService<IOptions<OllamaOptions>>());
         });
 
-        /// Singleton service for response language model, we do not want to create an instance per request.
+        // Singleton service for response language model, we do not want to create an instance per request.
         services.AddSingleton<LanguageModel<LanguageResponse>>(provider =>
         {
             var http_client = provider.GetRequiredService<HttpClient>();
