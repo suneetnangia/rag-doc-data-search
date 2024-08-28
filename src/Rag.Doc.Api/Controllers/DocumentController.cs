@@ -1,7 +1,7 @@
-namespace Doc.Api.Controllers;
+namespace Rag.Doc.Api.Controllers;
 
-using Common;
 using Microsoft.AspNetCore.Mvc;
+using Rag.Common;
 
 [ApiController]
 [Route("[controller]")]
@@ -18,7 +18,7 @@ public class DocumentController : ControllerBase
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         LanguageModel<LanguageResponse> responseLanguageModel)
     {
-        // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.        
+        // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _vectorDb = vectorDb ?? throw new ArgumentNullException(nameof(vectorDb));

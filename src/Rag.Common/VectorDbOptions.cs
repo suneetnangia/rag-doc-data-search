@@ -1,4 +1,4 @@
-namespace Common;
+namespace Rag.Common;
 
 /// <summary>
 /// Options for the VectorDb.
@@ -6,7 +6,7 @@ namespace Common;
 public class VectorDbOptions
 {
     public const string VectorDb = "VectorDb";
-    
+
     public required string HostName { get; set; }
 
     public required int HostPort { get; set; }

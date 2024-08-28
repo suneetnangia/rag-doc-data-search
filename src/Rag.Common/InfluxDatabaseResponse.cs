@@ -1,4 +1,4 @@
-namespace Common;
+namespace Rag.Common;
 
 using System.Text.Json.Serialization;
 using InfluxDB.Client.Core.Flux.Domain;
@@ -7,8 +7,8 @@ using InfluxDB.Client.Core.Flux.Domain;
 /// TODO: Add more properties to this class as needed.
 /// </summary>
 [Serializable]
-public class InfluxDatabaseResponse 
+public class InfluxDatabaseResponse
 {
     [JsonInclude]
-    public required FluxTable[] Raw;
+    public required FluxTable[] Raw { get; set; }
 }

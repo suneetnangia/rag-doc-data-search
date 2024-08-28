@@ -1,4 +1,4 @@
-namespace Common;
+namespace Rag.Common;
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -28,10 +28,6 @@ public class QdrantVectorDb : IVectorDb
         _vector_db_client = new QdrantClient(vectorDbHostName, vectorDbPort);
     }
 
-    /// <summary>
-    /// Initialize the vector database.
-    /// </summary>
-    /// <returns></returns>
     public async Task Init(CancellationToken cancellationToken = default(CancellationToken))
     {
         _logger.LogInformation($"Initializing vector db...");
@@ -43,18 +39,18 @@ public class QdrantVectorDb : IVectorDb
         else
         {
             _logger.LogInformation($"Collection {_vectorDbCollectionName} does not exists, creating it.");
-            await _vector_db_client.CreateCollectionAsync(collectionName: _vectorDbCollectionName, vectorsConfig: new VectorParams
-            {
-                // TODO: Vector dimension and size can be read from configuration or inferred from the embedding model.
-                Size = 1024,
-                Distance = Distance.Cosine
-            }, cancellationToken: cancellationToken);
+            await _vector_db_client.CreateCollectionAsync(
+                collectionName: _vectorDbCollectionName,
+                vectorsConfig: new VectorParams
+                {
+                    // TODO: Vector dimension and size can be read from configuration or inferred from the embedding model.
+                    Size = 1024,
+                    Distance = Distance.Cosine
+                },
+                cancellationToken: cancellationToken);
         }
     }
 
-    /// <summary>
-    /// Add document into the vector database.
-    /// </summary>
     public async Task AddDocumentAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
@@ -78,23 +74,27 @@ public class QdrantVectorDb : IVectorDb
 
         var generated_embeddings = await embeddingsLanguageModel.Generate(document, cancellationToken);
 
-        var result = await _vector_db_client.UpsertAsync(_vectorDbCollectionName, new List<PointStruct>
+        var result = await _vector_db_client.UpsertAsync(
+            _vectorDbCollectionName,
+            new List<PointStruct>
             {
                 new()
                 {
                     Id = documentId,
                     Vectors = generated_embeddings.Embedding,
-                    Payload = {
+                    Payload =
+                    {
                         // TODO: This can be optimized by defining schema/strong type for the payload which can include any key-value pairs.
                         ["document"] = document,
                     }
                 }
-            }, cancellationToken: cancellationToken);
+            },
+            cancellationToken: cancellationToken);
 
         _logger.LogTrace($"Inserted embeddings in vector db, document : {result}");
     }
 
-    public async Task<IEnumerable<Task<SearchResponse?>>> GetDocumentsAsync(
+    public async Task<IEnumerable<Task<SearchResponse>>> GetDocumentsAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         LanguageModel<LanguageResponse>? responseLanguageModel,
         string searchString,
@@ -157,8 +157,7 @@ public class QdrantVectorDb : IVectorDb
                         Response = languageResponse.Response
                     }
                 };
-            }
-        );
+            });
 
         _logger.LogTrace($"Returning response(s) from vector db and S/LLM, vector db had total of {total_documents} documents.");
 
@@ -217,17 +216,18 @@ public class QdrantVectorDb : IVectorDb
             var document = documents[0];
 
             // TODO: "document" key should come from the schema/strong type for the payload.
-            var string_document = document.Payload?["document"]?.ToString();
-            var json_document = JsonDocument.Parse(string_document);
+            var string_document = document.Payload["document"]?.ToString();
+            var json_document = string_document != null ? JsonDocument.Parse(string_document) : throw new ArgumentNullException(string_document);
 
             // TODO: "stringValue" key should come from the schema/strong type for the payload.
             var db_query = json_document.RootElement.GetProperty("stringValue").GetString();
+            db_query = db_query != null ? db_query : throw new ArgumentNullException(db_query);
 
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(db_query, "organization");
 
-            // TODO: Prompt creation must be be made configurable to fine tune it.                        
-            var data_string =  JsonSerializer.Serialize(data.Raw);
+            // TODO: Prompt creation must be be made configurable to fine tune it.
+            var data_string = JsonSerializer.Serialize(data.Raw);
             var prompt = $"Using this data {data_string} Respond to this prompt: {queryString} without any additional information.";
 
             _logger.LogTrace($"Executing language model to generate response for the prompt '{prompt}'.");
@@ -264,6 +264,6 @@ public class QdrantVectorDb : IVectorDb
         {
             _logger.LogTrace($"No database query was found in the vector db, total queries in vector db are {total_documents}.");
             return null;
-        }        
+        }
     }
 }
