@@ -5,8 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
-using System.Reflection;
-using Google.Protobuf.Collections;
+
 
 /// <summary>
 /// Represents a specific implementation of vector database.
@@ -60,7 +59,7 @@ public class QdrantVectorDb : IVectorDb
     public async Task AddDocumentAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
-        VectorDbPayload payload,
+        BaseVectorDbRecord vectorRecord,
         CancellationToken cancellationToken)
     {
         if (embeddingsLanguageModel is null)
@@ -73,28 +72,19 @@ public class QdrantVectorDb : IVectorDb
             throw new ArgumentOutOfRangeException(nameof(documentId));
         }
 
-        if (payload is null)
+        if (vectorRecord is null)
         {
-            throw new ArgumentNullException(nameof(payload));
+            throw new ArgumentNullException(nameof(vectorRecord));
         }
 
-        var generated_embeddings = await embeddingsLanguageModel.Generate(payload.Document, cancellationToken);
+        var generated_embeddings = await embeddingsLanguageModel.Generate(vectorRecord.Document, cancellationToken);
         var pointStruct = new PointStruct
         {
-           
             Id = documentId,
             Vectors = generated_embeddings.Embedding,
-                
         };
-        foreach (PropertyInfo property in payload.GetType().GetProperties())
-        {
-            if (property.GetValue(payload) == null)
-            {
-                continue;
-            }
-            // TODO: currently we are assuming that all properties are strings, can be improved to handle other types
-            pointStruct.Payload[property.Name.ToLowerInvariant()] = property.GetValue(payload)?.ToString() ?? string.Empty;
-        }
+        var newPayload = QdrantVectorDbRecordFactory.Create(vectorRecord);
+        pointStruct.Payload.Add(newPayload);
         var pointStructList = new List<PointStruct> { pointStruct };
         var result = await _vector_db_client.UpsertAsync(_vectorDbCollectionName, pointStructList, cancellationToken: cancellationToken);
 
@@ -138,22 +128,23 @@ public class QdrantVectorDb : IVectorDb
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
 
         var total_documents = await _vector_db_client.CountAsync(_vectorDbCollectionName, cancellationToken: cancellationToken);
-        // TODO: evaluate using search on payload schema names and not only on embeddings
+        // TODO: evaluate using hybrid search on payload schema names and not only on embeddings
         var documents = await _vector_db_client.SearchAsync(_vectorDbCollectionName, embedding, limit: maxResults, scoreThreshold: minResultScore, payloadSelector: true, cancellationToken: cancellationToken);
 
         // TODO: this can be changed to have LLM prompt with RAG from all documents instead one by one, to have a consolidated answer
         var searchResponses = documents.Select(async doc =>
             {
-                QdrantDocumentVectorPayload queryDocument = DeserializePayload<QdrantDocumentVectorPayload>(doc.Payload);
+                DocumentVectorDbRecord queryDocument = QdrantVectorDbRecordFactory.Create<DocumentVectorDbRecord>(doc.Payload);
                 
                 // TODO: Prompt creation must be be made configurable to fine tune it.
-                var prompt = $"Using this data {queryDocument.Document} Respond to this prompt: {searchString} without any additional information.";
+                var prompt = $"Using this data {queryDocument.Document}, from {queryDocument.FileName}, {queryDocument.Page}. Respond to this prompt: {searchString} without any additional information.";
                 _logger.LogTrace($"Executing language model to generate response for the prompt '{prompt}'.");
 
                 var languageResponse = responseLanguageModel is null ? null : await responseLanguageModel.Generate(prompt, cancellationToken);
 
                 return new SearchResponse
                 {
+                    // TODO: evaluate if VectorResponse.Text should also return information from the payload like Page, FileName, etc.
                     VectorResponse = new VectorResponse
                     {
                         Id = doc.Id.Uuid,
@@ -177,6 +168,7 @@ public class QdrantVectorDb : IVectorDb
         return searchResponses;
     }
 
+    
     public async Task<DataQueryResponse?> GetDataAsync(
         LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
         LanguageModel<LanguageResponse>? responseLanguageModel,
@@ -227,19 +219,14 @@ public class QdrantVectorDb : IVectorDb
         {
             // TODO: Verify the first document with highest score is returned.
             var document = documents[0];
-
-            // TODO: "document" key should come from the schema/strong type for the payload.
-            QdrantQueryDataVectorPayload queryDocument = DeserializePayload<QdrantQueryDataVectorPayload>(document.Payload);
-            _logger.LogTrace($"The fields are filled in '{queryDocument.Document}' / and query {queryDocument.Query}.");
-
-            // TODO: "stringValue" key should come from the schema/strong type for the payload.
+            var queryDocument = QdrantVectorDbRecordFactory.Create<DataVectorDbRecord>(document.Payload);
             var db_query = queryDocument.Query;
 
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(db_query, "organization");
 
             // TODO: Prompt creation must be be made configurable to fine tune it.                        
-            var data_string =  JsonSerializer.Serialize(data.Raw);
+            var data_string = JsonSerializer.Serialize(data.Raw);
             var prompt = $"Using this data {data_string} Respond to this prompt: {queryString} without any additional information.";
 
             _logger.LogTrace($"Executing language model to generate response for the prompt '{prompt}'.");
@@ -248,6 +235,7 @@ public class QdrantVectorDb : IVectorDb
 
             var dataQueryResponse = new DataQueryResponse
             {
+                // TODO: evaluate what to return in VectorResponse.Text, should it contain the full payload data from db?
                 VectorResponse = new VectorResponse
                 {
                     Id = document.Id.Uuid,
@@ -276,31 +264,7 @@ public class QdrantVectorDb : IVectorDb
         {
             _logger.LogTrace($"No database query was found in the vector db, total queries in vector db are {total_documents}.");
             return null;
-        }        
-    }
-
-    private T DeserializePayload<T>(MapField<string, Value> payload)
-    {
-        var result = Activator.CreateInstance<T>();
-        var properties = typeof(T).GetProperties();
-       
-       foreach (var property in properties)
-        {
-            if (payload.TryGetValue(property.Name.ToLowerInvariant(), out var value))
-            {
-                if (property.PropertyType == typeof(string) && value.KindCase == Value.KindOneofCase.StringValue)
-                {
-                    property.SetValue(result, value.StringValue);
-                }
-                else if (property.PropertyType == typeof(double) && value.KindCase == Value.KindOneofCase.DoubleValue)
-                {
-                    property.SetValue(result, value.DoubleValue);
-                }
-                // Add more type checks and conversions as needed
-            }
         }
-
-        return result;
     }
 
 }
