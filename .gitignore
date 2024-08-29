@@ -280,3 +280,6 @@ __pycache__/
 # Chroma DB files
 chroma/
 qdrant_storage/
+
+# VS Code Autogen Solution File
+*.generated.sln

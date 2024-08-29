@@ -7,6 +7,12 @@
         "appsettings",
         "ASPNETCORE",
         "Codespace",
+        "csdevkit",
+        "davidanson",
+        "devcontainers",
+        "dotnettools",
+        "finalizer",
+        "moby",
         "mxbai",
         "ollama",
         "Qdrant"
