@@ -79,7 +79,7 @@ public class QdrantVectorDb : IVectorDb
             Id = documentId,
             Vectors = generated_embeddings.Embedding,
         };
-        documentPointStruct.Payload.Add(QdrantVectorDbRecordFactory.Create(document));
+        documentPointStruct.Payload.Add(document.ConvertToMapField());
         var result = await _vector_db_client.UpsertAsync(
             _vectorDbCollectionName,
             new List<PointStruct>
@@ -133,7 +133,7 @@ public class QdrantVectorDb : IVectorDb
         // TODO: RAG for ResponseLanguageModel - evaluate building a single prompt with RAG for all document chunks instead of individual prompts.
         var searchResponses = documents.Select(async doc =>
             {
-                var documentVectorDbRecord = QdrantVectorDbRecordFactory.Create<DocumentVectorDbRecord>(doc.Payload);
+                var documentVectorDbRecord = doc.Payload.ConvertToBaseVectorDbRecord<DocumentVectorDbRecord>();
 
                 // TODO: Prompt creation must be be made configurable to fine tune it.
                 var prompt = $"Using this content {documentVectorDbRecord.Document} from {documentVectorDbRecord.FileName} .Respond to this prompt: {searchString} without any additional information.";
@@ -215,7 +215,9 @@ public class QdrantVectorDb : IVectorDb
         {
             // TODO: Verify the first document with highest score is returned.
             var document = documents[0];
-            var dataVectorDbRecord = QdrantVectorDbRecordFactory.Create<DataVectorDbRecord>(document.Payload);
+            var dataVectorDbRecord = document.Payload.ConvertToBaseVectorDbRecord<DataVectorDbRecord>();
+
+            // TODO REMOVE var dataVectorDbRecord = QdrantVectorDbRecordFactory.Create<DataVectorDbRecord>(document.Payload);
 
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(dataVectorDbRecord.Query, "organization");

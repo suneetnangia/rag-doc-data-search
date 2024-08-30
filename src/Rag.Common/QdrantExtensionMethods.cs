@@ -4,9 +4,10 @@ using System.Text.Json;
 using Google.Protobuf.Collections;
 using Qdrant.Client.Grpc;
 
-public static class QdrantVectorDbRecordFactory
+internal static class QdrantExtensionMethods
 {
-    public static T Create<T>(MapField<string, Value> payload)
+    public static T ConvertToBaseVectorDbRecord<T>(this MapField<string, Value> payload)
+    where T : BaseVectorDbRecord
     {
         ArgumentNullException.ThrowIfNull(payload);
 
@@ -17,6 +18,8 @@ public static class QdrantVectorDbRecordFactory
             {
                 Value.KindOneofCase.StringValue => kvp.Value.StringValue,
                 Value.KindOneofCase.IntegerValue => kvp.Value.IntegerValue,
+                Value.KindOneofCase.DoubleValue => kvp.Value.DoubleValue,
+                Value.KindOneofCase.StructValue => kvp.Value.StructValue,
                 Value.KindOneofCase.BoolValue => kvp.Value.BoolValue,
                 _ => throw new InvalidOperationException($"Unsupported value type {kvp.Value.KindCase}.")
             };
@@ -28,7 +31,7 @@ public static class QdrantVectorDbRecordFactory
         return dataVectorDbRecord ?? throw new InvalidOperationException("DataVectorDbRecord is null.");
     }
 
-    public static MapField<string, Value> Create(BaseVectorDbRecord obj)
+    public static MapField<string, Value> ConvertToMapField(this BaseVectorDbRecord obj)
     {
         string jsonString = obj switch
         {
@@ -95,4 +98,22 @@ public static class QdrantVectorDbRecordFactory
 
         throw new InvalidOperationException($"Unsupported JsonValueKind: {element.ValueKind}");
     }
+
+    // private static Value ConvertJsonElementToValue(JsonElement element)
+    // {
+    //     switch (element.ValueKind)
+    //     {
+    //         case JsonValueKind.String:
+    //             return new Value { StringValue = element.GetString() };
+    //         case JsonValueKind.Number:
+    //             return new Value { IntegerValue = element.GetInt32() };
+    //         case J
+    //         case JsonValueKind.True:
+    //             return new Value { BoolValue = true };
+    //         case JsonValueKind.False:
+    //             return new Value { BoolValue = false };
+    //         default:
+    //             throw new InvalidOperationException($"Unsupported value type {element.ValueKind}.");
+    //     }
+    // }
 }
