@@ -98,22 +98,4 @@ internal static class QdrantExtensionMethods
 
         throw new InvalidOperationException($"Unsupported JsonValueKind: {element.ValueKind}");
     }
-
-    // private static Value ConvertJsonElementToValue(JsonElement element)
-    // {
-    //     switch (element.ValueKind)
-    //     {
-    //         case JsonValueKind.String:
-    //             return new Value { StringValue = element.GetString() };
-    //         case JsonValueKind.Number:
-    //             return new Value { IntegerValue = element.GetInt32() };
-    //         case J
-    //         case JsonValueKind.True:
-    //             return new Value { BoolValue = true };
-    //         case JsonValueKind.False:
-    //             return new Value { BoolValue = false };
-    //         default:
-    //             throw new InvalidOperationException($"Unsupported value type {element.ValueKind}.");
-    //     }
-    // }
 }

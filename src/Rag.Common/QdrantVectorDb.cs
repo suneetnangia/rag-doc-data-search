@@ -217,8 +217,6 @@ public class QdrantVectorDb : IVectorDb
             var document = documents[0];
             var dataVectorDbRecord = document.Payload.ConvertToBaseVectorDbRecord<DataVectorDbRecord>();
 
-            // TODO REMOVE var dataVectorDbRecord = QdrantVectorDbRecordFactory.Create<DataVectorDbRecord>(document.Payload);
-
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(dataVectorDbRecord.Query, "organization");
 
