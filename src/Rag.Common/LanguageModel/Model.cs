@@ -1,11 +1,11 @@
-﻿namespace Rag.Common;
+﻿namespace Rag.Common.LanguageModel;
 
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using static System.Net.Mime.MediaTypeNames;
 
-public abstract class LanguageModel<T>
+public abstract class Model<T>
 {
     private readonly ILogger _logger;
     private readonly HttpClient _http_client;
@@ -13,7 +13,7 @@ public abstract class LanguageModel<T>
     private readonly Uri _ollama_api_relative_url;
     private readonly string _language_model_name;
 
-    public LanguageModel(ILogger logger, HttpClient httpClient, Uri ollamaApiPullRelativeUrl, Uri ollamaApiRelativeUrl, string languageModelName)
+    public Model(ILogger logger, HttpClient httpClient, Uri ollamaApiPullRelativeUrl, Uri ollamaApiRelativeUrl, string languageModelName)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

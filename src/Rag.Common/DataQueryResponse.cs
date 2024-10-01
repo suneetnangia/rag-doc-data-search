@@ -1,6 +1,8 @@
 namespace Rag.Common;
 
 using System.Text.Json.Serialization;
+using Rag.Common.Database;
+using Rag.Common.LanguageModel;
 
 [Serializable]
 public class DataQueryResponse

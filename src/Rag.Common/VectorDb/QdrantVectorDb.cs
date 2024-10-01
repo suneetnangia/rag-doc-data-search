@@ -1,10 +1,13 @@
-namespace Rag.Common;
+namespace Rag.Common.VectorDb;
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
+using Rag.Common.Database;
+using Rag.Common.LanguageModel;
+using Rag.Common.Responses;
 
 /// <summary>
 /// Represents a specific implementation of vector database.
@@ -52,7 +55,7 @@ public class QdrantVectorDb : IVectorDb
     }
 
     public async Task AddDocumentAsync(
-        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
+        Model<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
         BaseVectorDbRecord document,
         CancellationToken cancellationToken)
@@ -91,9 +94,9 @@ public class QdrantVectorDb : IVectorDb
         _logger.LogTrace($"Inserted embeddings in vector db, document : {result}");
     }
 
-    public async Task<IEnumerable<Task<SearchResponse>>> GetDocumentsAsync(
-        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<LanguageResponse>? responseLanguageModel,
+    public async Task<IEnumerable<Task<Common.SearchResponse>>> GetDocumentsAsync(
+        Model<VectorEmbeddings> embeddingsLanguageModel,
+        Model<LanguageResponse>? responseLanguageModel,
         string searchString,
         CancellationToken cancellationToken,
         float minResultScore = 0.5f,
@@ -140,7 +143,7 @@ public class QdrantVectorDb : IVectorDb
 
                 var languageResponse = responseLanguageModel is null ? null : await responseLanguageModel.Generate(prompt, cancellationToken);
 
-                return new SearchResponse
+                return new Common.SearchResponse
                 {
                     // TODO: Evaluate changing VectorResponse.Text to contain only fields as chosen (not the entire payload).
                     VectorResponse = new VectorResponse
@@ -166,8 +169,8 @@ public class QdrantVectorDb : IVectorDb
     }
 
     public async Task<DataQueryResponse?> GetDataAsync(
-        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<LanguageResponse>? responseLanguageModel,
+        Model<VectorEmbeddings> embeddingsLanguageModel,
+        Model<LanguageResponse>? responseLanguageModel,
         InfluxDbRepository influxDbRepository,
         string queryString,
         CancellationToken cancellationToken,

@@ -1,4 +1,4 @@
-namespace Rag.Common;
+namespace Rag.Common.Database;
 
 using System.Text.Json.Serialization;
 using InfluxDB.Client.Core.Flux.Domain;

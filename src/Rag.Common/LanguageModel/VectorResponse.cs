@@ -1,4 +1,4 @@
-namespace Rag.Common;
+namespace Rag.Common.LanguageModel;
 
 using System.Text.Json.Serialization;
 

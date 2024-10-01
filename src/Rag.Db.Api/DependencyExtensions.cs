@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Options;
 
-using Rag.Common;
+using Rag.Common.Database;
+using Rag.Common.LanguageModel;
+using Rag.Common.Responses;
+using Rag.Common.VectorDb;
 
 public static class DependencyExtensions
 {
@@ -51,7 +54,7 @@ public static class DependencyExtensions
         });
 
         // Singleton service for embeddings language model, we do not want to create an instance per request.
-        services.AddSingleton<LanguageModel<VectorEmbeddings>>(provider =>
+        services.AddSingleton<Model<VectorEmbeddings>>(provider =>
         {
             var http_client = provider.GetRequiredService<HttpClient>();
             var ollama_options = provider.GetRequiredService<IOptions<OllamaOptions>>();
@@ -59,14 +62,14 @@ public static class DependencyExtensions
             http_client.Timeout = TimeSpan.FromSeconds(ollama_options.Value.HttpTimeoutInSeconds);
             http_client.BaseAddress = new Uri(ollama_options.Value.OllamaApiBaseUrl);
 
-            return new EmbeddingsLanguageModel(
-                provider.GetRequiredService<ILogger<EmbeddingsLanguageModel>>(),
+            return new EmbeddingsModel(
+                provider.GetRequiredService<ILogger<EmbeddingsModel>>(),
                 http_client,
                 provider.GetRequiredService<IOptions<OllamaOptions>>());
         });
 
         // Singleton service for response language model, we do not want to create an instance per request.
-        services.AddSingleton<LanguageModel<LanguageResponse>>(provider =>
+        services.AddSingleton<Model<LanguageResponse>>(provider =>
         {
             var http_client = provider.GetRequiredService<HttpClient>();
             var ollama_options = provider.GetRequiredService<IOptions<OllamaOptions>>();
@@ -74,8 +77,8 @@ public static class DependencyExtensions
             http_client.Timeout = TimeSpan.FromSeconds(ollama_options.Value.HttpTimeoutInSeconds);
             http_client.BaseAddress = new Uri(ollama_options.Value.OllamaApiBaseUrl);
 
-            return new ResponseLanguageModel(
-                provider.GetRequiredService<ILogger<ResponseLanguageModel>>(),
+            return new ResponseModel(
+                provider.GetRequiredService<ILogger<ResponseModel>>(),
                 http_client,
                 provider.GetRequiredService<IOptions<OllamaOptions>>());
         });
