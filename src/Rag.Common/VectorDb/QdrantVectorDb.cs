@@ -57,7 +57,7 @@ public class QdrantVectorDb : IVectorDb
     public async Task AddDocumentAsync(
         Model<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
-        string document,
+        BaseVectorDbRecord document,
         CancellationToken cancellationToken)
     {
         if (embeddingsLanguageModel is null)
@@ -70,27 +70,24 @@ public class QdrantVectorDb : IVectorDb
             throw new ArgumentOutOfRangeException(nameof(documentId));
         }
 
-        if (string.IsNullOrEmpty(document))
+        if (document is null)
         {
             throw new ArgumentNullException(nameof(document));
         }
 
-        var generated_embeddings = await embeddingsLanguageModel.Generate(document, cancellationToken);
+        var generated_embeddings = await embeddingsLanguageModel.Generate(document.Document, cancellationToken);
 
+        var documentPointStruct = new PointStruct
+        {
+            Id = documentId,
+            Vectors = generated_embeddings.Embedding,
+        };
+        documentPointStruct.Payload.Add(document.ConvertToMapField());
         var result = await _vector_db_client.UpsertAsync(
             _vectorDbCollectionName,
             new List<PointStruct>
             {
-                new()
-                {
-                    Id = documentId,
-                    Vectors = generated_embeddings.Embedding,
-                    Payload =
-                    {
-                        // TODO: This can be optimized by defining schema/strong type for the payload which can include any key-value pairs.
-                        ["document"] = document,
-                    }
-                }
+                documentPointStruct
             },
             cancellationToken: cancellationToken);
 
@@ -136,15 +133,19 @@ public class QdrantVectorDb : IVectorDb
         var total_documents = await _vector_db_client.CountAsync(_vectorDbCollectionName, cancellationToken: cancellationToken);
         var documents = await _vector_db_client.SearchAsync(_vectorDbCollectionName, embedding, limit: maxResults, scoreThreshold: minResultScore, payloadSelector: true, cancellationToken: cancellationToken);
 
+        // TODO: RAG for ResponseLanguageModel - evaluate building a single prompt with RAG for all document chunks instead of individual prompts.
         var searchResponses = documents.Select(async doc =>
             {
+                var documentVectorDbRecord = doc.Payload.ConvertToBaseVectorDbRecord<DocumentVectorDbRecord>();
+
                 // TODO: Prompt creation must be be made configurable to fine tune it.
-                var prompt = $"Using this data {doc.Payload.ToString()} Respond to this prompt: {searchString} without any additional information.";
+                var prompt = $"Using this content {documentVectorDbRecord.Document} from {documentVectorDbRecord.FileName} .Respond to this prompt: {searchString} without any additional information.";
 
                 var languageResponse = responseLanguageModel is null ? null : await responseLanguageModel.Generate(prompt, cancellationToken);
 
                 return new Common.SearchResponse
                 {
+                    // TODO: Evaluate changing VectorResponse.Text to contain only fields as chosen (not the entire payload).
                     VectorResponse = new VectorResponse
                     {
                         Id = doc.Id.Uuid,
@@ -217,17 +218,10 @@ public class QdrantVectorDb : IVectorDb
         {
             // TODO: Verify the first document with highest score is returned.
             var document = documents[0];
-
-            // TODO: "document" key should come from the schema/strong type for the payload.
-            var string_document = document.Payload["document"]?.ToString();
-            var json_document = string_document != null ? JsonDocument.Parse(string_document) : throw new ArgumentNullException(string_document);
-
-            // TODO: "stringValue" key should come from the schema/strong type for the payload.
-            var db_query = json_document.RootElement.GetProperty("stringValue").GetString();
-            db_query = db_query != null ? db_query : throw new ArgumentNullException(db_query);
+            var dataVectorDbRecord = document.Payload.ConvertToBaseVectorDbRecord<DataVectorDbRecord>();
 
             // TODO: "organization" should come from configuration.
-            var data = await influxDbRepository.QueryAsync(db_query, "organization");
+            var data = await influxDbRepository.QueryAsync(dataVectorDbRecord.Query, "organization");
 
             // TODO: Prompt creation must be be made configurable to fine tune it.
             var data_string = JsonSerializer.Serialize(data.Raw);
@@ -239,6 +233,7 @@ public class QdrantVectorDb : IVectorDb
 
             var dataQueryResponse = new DataQueryResponse
             {
+                // TODO: evaluate changing VectorResponse.Text to contain only fields as chosen (not the entire payload).
                 VectorResponse = new VectorResponse
                 {
                     Id = document.Id.Uuid,

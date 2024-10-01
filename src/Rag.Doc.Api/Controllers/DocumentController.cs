@@ -56,7 +56,8 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post(string[] documents)
+    [Produces("application/json")]
+    public async Task<IActionResult> Post(DocumentVectorDbRecord[] documents)
     {
         if (documents is null)
         {
