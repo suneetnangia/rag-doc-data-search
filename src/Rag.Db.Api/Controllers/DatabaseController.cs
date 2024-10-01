@@ -1,7 +1,10 @@
 namespace Rag.Db.Api.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
-using Rag.Common;
+using Rag.Common.Database;
+using Rag.Common.LanguageModel;
+using Rag.Common.Responses;
+using Rag.Common.VectorDb;
 
 [ApiController]
 [Route("[controller]")]
@@ -9,15 +12,15 @@ public class DatabaseController : ControllerBase
 {
     private readonly ILogger<DatabaseController> _logger;
     private readonly IVectorDb _vectorDb;
-    private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
-    private readonly LanguageModel<LanguageResponse> _responseLanguageModel;
+    private readonly Model<VectorEmbeddings> _embeddingsLanguageModel;
+    private readonly Model<LanguageResponse> _responseLanguageModel;
     private readonly InfluxDbRepository _influxDbRepository;
 
     public DatabaseController(
         ILogger<DatabaseController> logger,
         IVectorDb vectorDb,
-        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<LanguageResponse> responseLanguageModel,
+        Model<VectorEmbeddings> embeddingsLanguageModel,
+        Model<LanguageResponse> responseLanguageModel,
         InfluxDbRepository influxDbRepository)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.

@@ -1,4 +1,4 @@
-namespace Rag.Common;
+namespace Rag.Common.Responses;
 
 using System.Text.Json.Serialization;
 

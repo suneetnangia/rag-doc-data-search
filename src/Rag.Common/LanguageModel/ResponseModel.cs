@@ -1,16 +1,16 @@
-namespace Rag.Common;
+namespace Rag.Common.LanguageModel;
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-public class ResponseLanguageModel : LanguageModel<LanguageResponse>
+public class ResponseModel : Model<LanguageResponse>
 {
     private readonly ILogger _logger;
     private readonly HttpClient _http_client;
     private readonly Uri _ollama_api_response_relative_url;
 
-    public ResponseLanguageModel(ILogger logger, HttpClient httpClient, IOptions<OllamaOptions> ollamaOptions)
+    public ResponseModel(ILogger logger, HttpClient httpClient, IOptions<OllamaOptions> ollamaOptions)
     : base(
         logger,
         httpClient,

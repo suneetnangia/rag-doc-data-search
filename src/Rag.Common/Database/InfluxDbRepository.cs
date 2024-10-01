@@ -1,4 +1,4 @@
-namespace Rag.Common;
+namespace Rag.Common.Database;
 
 using InfluxDB.Client;
 using Microsoft.Extensions.Logging;

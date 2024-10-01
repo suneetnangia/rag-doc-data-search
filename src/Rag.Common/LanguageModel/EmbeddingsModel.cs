@@ -1,19 +1,20 @@
-namespace Rag.Common;
+namespace Rag.Common.LanguageModel;
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Rag.Common.Responses;
 
 /// <summary>
 /// Represents a model that generates embeddings for vector db.
 /// </summary>
-public class EmbeddingsLanguageModel : LanguageModel<VectorEmbeddings>
+public class EmbeddingsModel : Model<VectorEmbeddings>
 {
     private readonly ILogger _logger;
     private readonly HttpClient _http_client;
     private readonly Uri _ollama_embeddings_relative_url;
 
-    public EmbeddingsLanguageModel(ILogger logger, HttpClient httpClient, IOptions<OllamaOptions> ollamaOptions)
+    public EmbeddingsModel(ILogger logger, HttpClient httpClient, IOptions<OllamaOptions> ollamaOptions)
     : base(
         logger,
         httpClient,

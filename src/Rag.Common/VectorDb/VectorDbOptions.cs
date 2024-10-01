@@ -1,4 +1,4 @@
-namespace Rag.Common;
+namespace Rag.Common.VectorDb;
 
 /// <summary>
 /// Options for the VectorDb.

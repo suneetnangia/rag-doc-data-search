@@ -1,7 +1,9 @@
 namespace Rag.Doc.Api.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
-using Rag.Common;
+using Rag.Common.LanguageModel;
+using Rag.Common.Responses;
+using Rag.Common.VectorDb;
 
 [ApiController]
 [Route("[controller]")]
@@ -9,14 +11,14 @@ public class DocumentController : ControllerBase
 {
     private readonly ILogger<DocumentController> _logger;
     private readonly IVectorDb _vectorDb;
-    private readonly LanguageModel<VectorEmbeddings> _embeddingsLanguageModel;
-    private readonly LanguageModel<LanguageResponse> _responseLanguageModel;
+    private readonly Model<VectorEmbeddings> _embeddingsLanguageModel;
+    private readonly Model<LanguageResponse> _responseLanguageModel;
 
     public DocumentController(
         ILogger<DocumentController> logger,
         IVectorDb vectorDb,
-        LanguageModel<VectorEmbeddings> embeddingsLanguageModel,
-        LanguageModel<LanguageResponse> responseLanguageModel)
+        Model<VectorEmbeddings> embeddingsLanguageModel,
+        Model<LanguageResponse> responseLanguageModel)
     {
         // Logger settings are read from appsettings.json or appsettings.Development.json depending on the environment.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
