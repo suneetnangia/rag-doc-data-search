@@ -1,10 +1,15 @@
 # Dev Loop Process
 
-This is a work in progress document.
-
 ## Data Seeds
 
 ### Influx DB
+
+Open [Influx Db web UI](http://localhost:8086)
+
+#### Configure
+
+1. Create user name and extract token.
+2. Update ```src/Rag.Db.Api/appsettings.Development.json``` settings file with Influx Db token above.
 
 #### Data
 
@@ -14,7 +19,7 @@ Load air quality sample data from the following annotated csv file, using [Influ
 
 #### Queries
 
-Sample Influx DB queries (escape double quotes before inserting via Swagger):
+Add the sample Influx DB query (escape double quotes before inserting via Post in Swagger UI):
 
 ```influxdb
 from(bucket: "air_quality")
@@ -23,14 +28,6 @@ from(bucket: "air_quality")
   |> filter(fn: (r) => r["_field"] == "humidity")
   |> filter(fn: (r) => r["sensor_id"] == "TLM0100")
 ```
-
-## Outstanding
-
-1. Avoid returning internal errors to client.
-2. Enable streaming endpoint on API for immediate response from S/LLMs.
-3. Enable async processing using workers and http 202 accept for long running requests e.g. loading models.
-4. Unit and integration Tests.
-5. Add IDisposable pattern where applicable.
 
 ## Common Errors
 

@@ -76,16 +76,15 @@ public class QdrantVectorDb : IVectorDb
             Vectors = generated_embeddings.Embedding,
         };
 
-        if (document is DocumentVectorDbRecord)
+        switch (document)
         {
-            documentPointStruct.Payload.Add(((DocumentVectorDbRecord)document).ConvertToMapField());
-        }
-        else if (document is DataVectorDbRecord)
-        {
-            documentPointStruct.Payload.Add(((DataVectorDbRecord)document).ConvertToMapField());
-        }
-        else
-        {
+            case DocumentVectorDbRecord docRecord:
+            documentPointStruct.Payload.Add(docRecord.ConvertToMapField());
+            break;
+            case DataVectorDbRecord dataRecord:
+            documentPointStruct.Payload.Add(dataRecord.ConvertToMapField());
+            break;
+            default:
             throw new InvalidOperationException("Document type is not supported.");
         }
 
@@ -109,7 +108,6 @@ public class QdrantVectorDb : IVectorDb
         ulong maxResults = 1)
     {
         ArgumentNullException.ThrowIfNull(embeddingsLanguageModel, nameof(embeddingsLanguageModel));
-        ArgumentNullException.ThrowIfNull(responseLanguageModel, nameof(responseLanguageModel));
         ArgumentException.ThrowIfNullOrEmpty(searchString, nameof(searchString));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(minResultScore, 1.0f, nameof(minResultScore));
         ArgumentOutOfRangeException.ThrowIfLessThan(minResultScore, 0.0f, nameof(minResultScore));

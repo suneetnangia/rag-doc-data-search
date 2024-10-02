@@ -14,9 +14,9 @@ public class ResponseModel : Model<LanguageResponse>
     : base(
         logger,
         httpClient,
-#pragma warning disable CA1062 // Validate arguments of public methods
+        #pragma warning disable CA1062 // Validate arguments of public methods
         new Uri(ollamaOptions.Value.OllamaApiPullRelativeUrl, UriKind.Relative),
-#pragma warning restore CA1062 // Validate arguments of public methods
+        #pragma warning restore CA1062 // Validate arguments of public methods
         new Uri(ollamaOptions.Value.OllamaApiResponseRelativeUrl, UriKind.Relative),
         ollamaOptions.Value.ResponseLanguageModelName)
     {
