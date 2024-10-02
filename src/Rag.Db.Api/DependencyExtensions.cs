@@ -10,10 +10,7 @@ public static class DependencyExtensions
     public static IServiceCollection AddConfig(
              this IServiceCollection services, IConfiguration config)
     {
-        if (config is null)
-        {
-            throw new ArgumentNullException(nameof(config));
-        }
+        ArgumentNullException.ThrowIfNull(config);
 
         services.Configure<VectorDbOptions>(
              config.GetSection(VectorDbOptions.VectorDb));

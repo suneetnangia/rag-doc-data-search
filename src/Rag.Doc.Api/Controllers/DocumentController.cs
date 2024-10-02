@@ -59,10 +59,7 @@ public class DocumentController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> Post(DocumentVectorDbRecord[] documents)
     {
-        if (documents is null)
-        {
-            throw new ArgumentNullException(nameof(documents));
-        }
+        ArgumentNullException.ThrowIfNull(documents);
 
         // TODO: This can be optimized by parallel processing of documents.
         foreach (var document in documents)

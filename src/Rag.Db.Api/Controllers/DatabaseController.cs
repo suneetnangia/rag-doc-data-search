@@ -58,10 +58,7 @@ public class DatabaseController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post(DataVectorDbRecord[] queries)
     {
-        if (queries is null)
-        {
-            throw new ArgumentNullException(nameof(queries));
-        }
+        ArgumentNullException.ThrowIfNull(queries);
 
         // TODO: This can be optimized by parallel processing of queries.
         foreach (var query in queries)

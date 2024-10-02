@@ -29,11 +29,7 @@ public class EmbeddingsModel : Model<VectorEmbeddings>
 
         _http_client = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
-        if (ollamaOptions is null)
-        {
-            throw new ArgumentNullException(nameof(ollamaOptions));
-        }
-
+        ArgumentNullException.ThrowIfNull(ollamaOptions, nameof(ollamaOptions));
         _ollama_embeddings_relative_url = new Uri(ollamaOptions.Value.OllamaApiEmbeddingsRelativeUrl, UriKind.Relative);
     }
 

@@ -1,13 +1,6 @@
 namespace Rag.Common.VectorDb;
 
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-
-[Serializable]
-public class DataVectorDbRecord : BaseVectorDbRecord
+public class DataVectorDbRecord : VectorDbRecord
 {
-    [Required]
-    [JsonInclude]
-    [JsonPropertyName("query")]
     public required string Query { get; set; }
 }

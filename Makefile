@@ -1,6 +1,15 @@
 #! /bin/bash
 
 # Default target
+build:
+	dotnet build
+
+run_doc:
+	dotnet run --project src/Rag.Doc.Api
+
+run_db:
+	dotnet run --project src/Rag.Db.Api
+
 setup:
 	docker run -d --name qdrantdb -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage:z qdrant/qdrant
 	docker run -d --name ollama -v ollama:/root/.ollama -p 11434:11434 ollama/ollama
