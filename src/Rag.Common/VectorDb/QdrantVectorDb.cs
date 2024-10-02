@@ -37,11 +37,11 @@ public class QdrantVectorDb : IVectorDb
 
         if (await _vector_db_client.CollectionExistsAsync(_vectorDbCollectionName, cancellationToken: cancellationToken))
         {
-            _logger.LogTrace($"Collection {_vectorDbCollectionName} already exists, making use of it.");
+            _logger.LogTrace($"Collection {_vectorDbCollectionName} already exists, making use of it...");
         }
         else
         {
-            _logger.LogInformation($"Collection {_vectorDbCollectionName} does not exists, creating it.");
+            _logger.LogInformation($"Collection {_vectorDbCollectionName} does not exists, creating it...");
             await _vector_db_client.CreateCollectionAsync(
                 collectionName: _vectorDbCollectionName,
                 vectorsConfig: new VectorParams
@@ -57,22 +57,15 @@ public class QdrantVectorDb : IVectorDb
     public async Task AddDocumentAsync(
         Model<VectorEmbeddings> embeddingsLanguageModel,
         Guid documentId,
-        BaseVectorDbRecord document,
+        VectorDbRecord document,
         CancellationToken cancellationToken)
     {
-        if (embeddingsLanguageModel is null)
-        {
-            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
-        }
+        ArgumentNullException.ThrowIfNull(embeddingsLanguageModel, nameof(embeddingsLanguageModel));
+        ArgumentNullException.ThrowIfNull(document, nameof(document));
 
         if (documentId == Guid.Empty)
         {
             throw new ArgumentOutOfRangeException(nameof(documentId));
-        }
-
-        if (document is null)
-        {
-            throw new ArgumentNullException(nameof(document));
         }
 
         var generated_embeddings = await embeddingsLanguageModel.Generate(document.Document, cancellationToken);
@@ -82,7 +75,20 @@ public class QdrantVectorDb : IVectorDb
             Id = documentId,
             Vectors = generated_embeddings.Embedding,
         };
-        documentPointStruct.Payload.Add(document.ConvertToMapField());
+
+        if (document is DocumentVectorDbRecord)
+        {
+            documentPointStruct.Payload.Add(((DocumentVectorDbRecord)document).ConvertToMapField());
+        }
+        else if (document is DataVectorDbRecord)
+        {
+            documentPointStruct.Payload.Add(((DataVectorDbRecord)document).ConvertToMapField());
+        }
+        else
+        {
+            throw new InvalidOperationException("Document type is not supported.");
+        }
+
         var result = await _vector_db_client.UpsertAsync(
             _vectorDbCollectionName,
             new List<PointStruct>
@@ -102,30 +108,12 @@ public class QdrantVectorDb : IVectorDb
         float minResultScore = 0.5f,
         ulong maxResults = 1)
     {
-        if (embeddingsLanguageModel is null)
-        {
-            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
-        }
-
-        if (responseLanguageModel is null)
-        {
-            _logger.LogTrace("Response language model is not provided, using only vector db responses.");
-        }
-
-        if (string.IsNullOrEmpty(searchString))
-        {
-            throw new ArgumentNullException(nameof(searchString));
-        }
-
-        if (minResultScore < 0.0f || minResultScore > 1.0f)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minResultScore));
-        }
-
-        if (maxResults < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minResultScore));
-        }
+        ArgumentNullException.ThrowIfNull(embeddingsLanguageModel, nameof(embeddingsLanguageModel));
+        ArgumentNullException.ThrowIfNull(responseLanguageModel, nameof(responseLanguageModel));
+        ArgumentException.ThrowIfNullOrEmpty(searchString, nameof(searchString));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minResultScore, 1.0f, nameof(minResultScore));
+        ArgumentOutOfRangeException.ThrowIfLessThan(minResultScore, 0.0f, nameof(minResultScore));
+        ArgumentOutOfRangeException.ThrowIfLessThan<ulong>(maxResults, 1, nameof(maxResults));
 
         var generated_embeddings = await embeddingsLanguageModel.Generate(searchString, cancellationToken);
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
@@ -136,7 +124,7 @@ public class QdrantVectorDb : IVectorDb
         // TODO: RAG for ResponseLanguageModel - evaluate building a single prompt with RAG for all document chunks instead of individual prompts.
         var searchResponses = documents.Select(async doc =>
             {
-                var documentVectorDbRecord = doc.Payload.ConvertToBaseVectorDbRecord<DocumentVectorDbRecord>();
+                var documentVectorDbRecord = doc.Payload.ConvertToDocumentVectorDbRecord();
 
                 // TODO: Prompt creation must be be made configurable to fine tune it.
                 var prompt = $"Using this content {documentVectorDbRecord.Document} from {documentVectorDbRecord.FileName} .Respond to this prompt: {searchString} without any additional information.";
@@ -176,30 +164,12 @@ public class QdrantVectorDb : IVectorDb
         CancellationToken cancellationToken,
         float minResultScore)
     {
-        if (embeddingsLanguageModel is null)
-        {
-            throw new ArgumentNullException(nameof(embeddingsLanguageModel));
-        }
-
-        if (responseLanguageModel is null)
-        {
-            _logger.LogTrace("Response language model is not provided, using only vector db responses.");
-        }
-
-        if (influxDbRepository is null)
-        {
-            throw new ArgumentNullException(nameof(influxDbRepository));
-        }
-
-        if (string.IsNullOrEmpty(queryString))
-        {
-            throw new ArgumentNullException(nameof(queryString));
-        }
-
-        if (minResultScore < 0.0f || minResultScore > 1.0f)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minResultScore));
-        }
+        ArgumentNullException.ThrowIfNull(embeddingsLanguageModel, nameof(embeddingsLanguageModel));
+        ArgumentNullException.ThrowIfNull(responseLanguageModel, nameof(responseLanguageModel));
+        ArgumentNullException.ThrowIfNull(influxDbRepository, nameof(influxDbRepository));
+        ArgumentException.ThrowIfNullOrEmpty(queryString, nameof(queryString));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minResultScore, 1.0f, nameof(minResultScore));
+        ArgumentOutOfRangeException.ThrowIfLessThan(minResultScore, 0.0f, nameof(minResultScore));
 
         var generated_embeddings = await embeddingsLanguageModel.Generate(queryString, cancellationToken);
         var embedding = new ReadOnlyMemory<float>(generated_embeddings.Embedding);
@@ -218,7 +188,7 @@ public class QdrantVectorDb : IVectorDb
         {
             // TODO: Verify the first document with highest score is returned.
             var document = documents[0];
-            var dataVectorDbRecord = document.Payload.ConvertToBaseVectorDbRecord<DataVectorDbRecord>();
+            var dataVectorDbRecord = document.Payload.ConvertToDataVectorDbRecord();
 
             // TODO: "organization" should come from configuration.
             var data = await influxDbRepository.QueryAsync(dataVectorDbRecord.Query, "organization");

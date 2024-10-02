@@ -25,11 +25,7 @@ public class ResponseModel : Model<LanguageResponse>
 
         _http_client = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
-        if (ollamaOptions is null)
-        {
-            throw new ArgumentNullException(nameof(ollamaOptions));
-        }
-
+        ArgumentNullException.ThrowIfNull(ollamaOptions, nameof(ollamaOptions));
         _ollama_api_response_relative_url = new Uri(ollamaOptions.Value.OllamaApiResponseRelativeUrl, UriKind.Relative);
     }
 

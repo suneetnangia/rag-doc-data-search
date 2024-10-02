@@ -1,101 +1,49 @@
 namespace Rag.Common.VectorDb;
 
-using System.Text.Json;
 using Google.Protobuf.Collections;
 using Qdrant.Client.Grpc;
 
 internal static class QdrantExtensionMethods
 {
-    public static T ConvertToBaseVectorDbRecord<T>(this MapField<string, Value> payload)
-    where T : BaseVectorDbRecord
+    public static DocumentVectorDbRecord ConvertToDocumentVectorDbRecord(this MapField<string, Value> payload)
     {
-        ArgumentNullException.ThrowIfNull(payload);
-
-        var dictionary = new Dictionary<string, object>();
-        foreach (var kvp in payload)
+        return new DocumentVectorDbRecord
         {
-            dictionary[kvp.Key] = kvp.Value.KindCase switch
-            {
-                Value.KindOneofCase.StringValue => kvp.Value.StringValue,
-                Value.KindOneofCase.IntegerValue => kvp.Value.IntegerValue,
-                Value.KindOneofCase.DoubleValue => kvp.Value.DoubleValue,
-                Value.KindOneofCase.StructValue => kvp.Value.StructValue,
-                Value.KindOneofCase.BoolValue => kvp.Value.BoolValue,
-                _ => throw new InvalidOperationException($"Unsupported value type {kvp.Value.KindCase}.")
-            };
-        }
-
-        var jsonString = JsonSerializer.Serialize(dictionary);
-        var dataVectorDbRecord = JsonSerializer.Deserialize<T>(jsonString);
-
-        return dataVectorDbRecord ?? throw new InvalidOperationException("DataVectorDbRecord is null.");
-    }
-
-    public static MapField<string, Value> ConvertToMapField(this BaseVectorDbRecord obj)
-    {
-        string jsonString = obj switch
-        {
-            DocumentVectorDbRecord documentVectorDbRecord => JsonSerializer.Serialize(documentVectorDbRecord),
-            DataVectorDbRecord dataVectorDbRecord => JsonSerializer.Serialize(dataVectorDbRecord),
-            _ => JsonSerializer.Serialize(obj),
+            Document = payload.ContainsKey("document") ? payload["document"].StringValue : throw new InvalidOperationException("document key is required from vector db."),
+            Tags = payload.ContainsKey("tags") ? payload["tags"].StringValue : null,
+            FileName = payload.ContainsKey("filename") ? payload["filename"].StringValue : null,
+            Page = payload.ContainsKey("page") ? payload["page"].StringValue : null
         };
-
-        // Deserialize the JSON string into a dictionary
-        var jsonDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonString);
-        var mapField = new MapField<string, Value>();
-
-        if (jsonDictionary != null)
-        {
-            foreach (var kvp in jsonDictionary)
-            {
-                mapField[kvp.Key] = ConvertJsonElementToValue(kvp.Value);
-            }
-        }
-
-        return mapField;
     }
 
-    private static Value ConvertJsonElementToValue(JsonElement element)
+    public static DataVectorDbRecord ConvertToDataVectorDbRecord(this MapField<string, Value> payload)
     {
-        switch (element.ValueKind)
+        return new DataVectorDbRecord
         {
-            case JsonValueKind.String:
-                return new Value { StringValue = element.GetString() };
-            case JsonValueKind.Number:
-                if (element.TryGetInt64(out var l))
-                {
-                    return new Value { IntegerValue = l };
-                }
+            Document = payload.ContainsKey("document") ? payload["document"].StringValue : throw new InvalidOperationException("document key is required from vector db."),
+            Tags = payload.ContainsKey("tags") ? payload["tags"].StringValue : null,
+            Query = payload.ContainsKey("query") ? payload["query"].StringValue : throw new InvalidOperationException("query key is required from vector db.")
+        };
+    }
 
-                if (element.TryGetDouble(out var d))
-                {
-                    return new Value { DoubleValue = d };
-                }
+    public static MapField<string, Value> ConvertToMapField(this DocumentVectorDbRecord documentVectorDbRecord)
+    {
+        return new MapField<string, Value>
+        {
+            { "document", new Value { StringValue = documentVectorDbRecord.Document } },
+            { "tags", new Value { StringValue = documentVectorDbRecord.Tags } },
+            { "filename", new Value { StringValue = documentVectorDbRecord.FileName } },
+            { "page", new Value { StringValue = documentVectorDbRecord.Page } }
+        };
+    }
 
-                break;
-            case JsonValueKind.True:
-            case JsonValueKind.False:
-                return new Value { BoolValue = element.GetBoolean() };
-            case JsonValueKind.Null:
-                return new Value { NullValue = NullValue.NullValue };
-            case JsonValueKind.Object:
-                var obj = new Struct();
-                foreach (var prop in element.EnumerateObject())
-                {
-                    obj.Fields[prop.Name] = ConvertJsonElementToValue(prop.Value);
-                }
-
-                return new Value { StructValue = obj };
-            case JsonValueKind.Array:
-                var array = new List<Value>();
-                foreach (var item in element.EnumerateArray())
-                {
-                    array.Add(ConvertJsonElementToValue(item));
-                }
-
-                return new Value { ListValue = new ListValue { Values = { array } } };
-        }
-
-        throw new InvalidOperationException($"Unsupported JsonValueKind: {element.ValueKind}");
+    public static MapField<string, Value> ConvertToMapField(this DataVectorDbRecord dataVectorDbRecord)
+    {
+        return new MapField<string, Value>
+        {
+            { "document", new Value { StringValue = dataVectorDbRecord.Document } },
+            { "tags", new Value { StringValue = dataVectorDbRecord.Tags } },
+            { "query", new Value { StringValue = dataVectorDbRecord.Query } }
+        };
     }
 }
