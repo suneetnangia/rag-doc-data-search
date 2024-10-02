@@ -34,25 +34,36 @@ This section describes the steps to deploy this solution in your environment.
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/suneetnangia/rag-doc-data-search/)
 
 2. Install dependent services ```make setup```
-3. Run document search service ```cd src/Rag.Doc.Api && dotnet run```
-4. Open Swagger link to try the APIs. If you are running the codespace Visual Studio Code Desktop, you can use ```http://localhost:5152/swagger/index.html```. In case you are running the codespace in the browser, you can get the hostname from the Ports tab. Copy the URL and append ```/swagger/index.html``` to it, open in a new browser window.
-
-> Note: optionally you can also open the Dev Container locally by first cloning this repo, opening it in Visual Studio Code and choosing **Ctrl/Cmd + Shift + P > Dev Containers: Reopen in container**.
+3. Run Document API:
+   1. Run document search service ```make run_doc```
+   2. Open Swagger link ```http://localhost:5152/swagger/index.html``` if you are on VS Code.
+   3. Open Swagger link by appending ```/swagger/index.html``` to the hostname from the Ports tab if you are on Codespaces in a browser.
+4. Run Data API:
+   1. Configure Influx DB as described [here](docs/dev-loop.md#influx-db).
+   2. Run document search service ```make run_db```
+   3. Open Swagger link ```http://localhost:5155/swagger/index.html``` if you are on VS Code.
+   4. Open Swagger link by appending ```/swagger/index.html``` to the hostname from the Ports tab if you are on Codespaces in a browser.
 
 ### Local Deployment/Development on WSL/Linux
 
 1. Clone repo ```git clone git@github.com:suneetnangia/rag-doc-data-search.git && cd rag-doc-data-search```
-2. Install dependent services ```make setup```
-3. Run document search service ```cd src/Rag.Doc.Api && dotnet run```
-4. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
+2. Optionally, open the repo in a pre-configured Dev Container.
+3. Install dependent services ```make setup```
+4. Run Document API:
+   1. Run document search service ```make run_doc```
+   2. Open Swagger link ```http://localhost:5152/swagger/index.html``` to try the APIs.
+5. Run Data API:
+   1. Configure Influx DB as described [here](docs/dev-loop.md#influx-db).
+   2. Run document search service ```make run_db```
+   3. Open Swagger link ```http://localhost:5155/swagger/index.html``` to try the APIs.
 
 ## Configuration and Extensibility
 
 This repo makes use of [Ollama](https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options along with vector db options in this solution, they can be configured via [appsettings](src/Doc.Api/appsettings.Development.json).
 
-## Extension Repos [WIP]
+## Potential Extension Repos [WIP]
 
-These repos provide layers on top of this solution, to provide an on-ramp for various use cases.
+These potential repos can provide layers on top of this solution, to provide an on-ramp for various use cases.
 
 1. CLI Repo: Provides access to the solution via CLI interface for scripting and automating.
 2. Bootstrapping Repo: Loads sample data in the solution.

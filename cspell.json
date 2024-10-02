@@ -15,6 +15,7 @@
         "moby",
         "mxbai",
         "ollama",
+        "Protobuf",
         "Qdrant"
     ],
     "ignoreWords": [],
