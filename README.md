@@ -61,9 +61,9 @@ This section describes the steps to deploy this solution in your environment.
 
 This repo makes use of [Ollama](https://github.com/ollama/ollama) to host both embeddings models and S/LLM models. Ollama provides various options regarding hosting and management of models, we surface some of those options along with vector db options in this solution, they can be configured via [appsettings](src/Doc.Api/appsettings.Development.json).
 
-## Potential Extension Repos [WIP]
+## Potential Extensions
 
-These potential repos can provide layers on top of this solution, to provide an on-ramp for various use cases.
+These potential extensions can provide layers on top of this solution, to provide an on-ramp for various use cases.
 
 1. CLI Repo: Provides access to the solution via CLI interface for scripting and automating.
 2. Bootstrapping Repo: Loads sample data in the solution.

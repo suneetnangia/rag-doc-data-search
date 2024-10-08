@@ -64,7 +64,6 @@ public abstract class Model<T>
 
     private async Task Load()
     {
-        // var api_url = new Uri(_ollama_api_base_url, _ollama_api_relative_url);
         var api_payload = JsonSerializer.Serialize(new { name = _language_model_name });
 
         _logger.LogTrace($"Loading model {_language_model_name}, using relative url {_ollama_api_pull_relative_url}.");
